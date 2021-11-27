@@ -15,6 +15,5 @@ Add to your ~/.bashrc file for bash user. Source the file for the first time. It
 export TINTPY_HOME=/home/ly/TintPy
 export PATH=${PATH}:${TINTPY_HOME}/tintpy
 export PYTHONPATH=${PYTHONPATH}:${TINTPY_HOME}/tintpy
-
 # <<< TintPy <<<
 ```
