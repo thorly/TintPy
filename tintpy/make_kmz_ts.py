@@ -4,6 +4,7 @@
 # Copyright (c) 2021, Lei Yuan #
 # Author: Lei Yuan, 2021       #
 ################################
+
 import argparse
 import os
 import sys
@@ -55,41 +56,15 @@ wkhDdEwDPtVkAFoAFYAFYABaABWABWAAWgAXwOttPxi1EjO7EVwYAAAAASUVORK5CYII="""
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(
-        description=
-        'Display velocity and time-series displacement derived by InSAR in Google Earth.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-    parser.add_argument('ts_file',
-                        help='formatted timeseries file for making KMZ file')
+    parser = argparse.ArgumentParser(description='Display velocity and time-series displacement derived by InSAR in Google Earth.',
+        formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
+    parser.add_argument('ts_file', help='formatted timeseries file for making KMZ file')
     parser.add_argument('out_file', help='output KMZ file')
-    parser.add_argument('-v',
-                        dest='vlim',
-                        nargs=2,
-                        metavar=('MIN', 'MAX'),
-                        type=float,
-                        default=(-60, 60),
-                        help='velocity limits (defaults: -60 60)')
-    parser.add_argument('-c',
-                        dest='colormap',
-                        default='jet',
-                        help='colormap (defaults: jet)')
-    parser.add_argument('-j',
-                        dest='js_file',
-                        default='$TINTPY_HOME/data',
-                        help='javascript file for drawing timeseries graph')
-    parser.add_argument('-s',
-                        dest='scale',
-                        default=0.8,
-                        type=float,
-                        help='scale of point for display (defaults: 0.8)')
-    parser.add_argument(
-        '-n',
-        dest='num_flag',
-        default='t',
-        choices=['t', 'T', 'f', 'F'],
-        help='first column of data is point number [t] or not [f] (defaults: t)'
-    )
+    parser.add_argument('-v', dest='vlim', nargs=2, metavar=('MIN', 'MAX'), type=float, default=(-60, 60), help='velocity limits (defaults: -60 60)')
+    parser.add_argument('-c', dest='colormap', default='jet', help='colormap (defaults: jet)')
+    parser.add_argument('-j', dest='js_file', default='$TINTPY_HOME/data', help='javascript file for drawing timeseries graph')
+    parser.add_argument('-s', dest='scale', default=0.8, type=float, help='scale of point for display (defaults: 0.8)')
+    parser.add_argument('-n', dest='num_flag', default='t', choices=['t', 'T', 'f', 'F'], help='first column of data is point number [t] or not [f] (defaults: t)')
 
     inps = parser.parse_args()
     return inps
@@ -110,10 +85,7 @@ def plot_colorbar(out_file, vlim, cmap, figsize=(0.36, 3.6), nbins=6):
 
     norm = mpl.colors.Normalize(vmin=vlim[0], vmax=vlim[1])
     cmap = plt.get_cmap(cmap)
-    cbar = mpl.colorbar.ColorbarBase(cax,
-                                     cmap=cmap,
-                                     norm=norm,
-                                     orientation='vertical')
+    cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='vertical')
 
     label = 'mean LOS velocity [mm/yr]'
     cbar.set_label(label, fontsize=6)
@@ -123,10 +95,7 @@ def plot_colorbar(out_file, vlim, cmap, figsize=(0.36, 3.6), nbins=6):
     fig.patch.set_facecolor('white')
     fig.patch.set_alpha(1)
 
-    fig.savefig(out_file,
-                bbox_inches='tight',
-                facecolor=fig.get_facecolor(),
-                dpi=300)
+    fig.savefig(out_file, bbox_inches='tight', facecolor=fig.get_facecolor(), dpi=300)
 
 
 def load_ts(ts_file, num_flag):
@@ -277,8 +246,8 @@ def get_hex_color(v, colormap, norm):
     """
     # get rgba color components for point velocity
     rgba = colormap(norm(v))
-    c_hex = mpl.colors.to_hex([rgba[3], rgba[2], rgba[1], rgba[0]],
-                              keep_alpha=True)[1:]
+    c_hex = mpl.colors.to_hex([rgba[3], rgba[2], rgba[1], rgba[0]], keep_alpha=True)[1:]
+
     return c_hex
 
 
@@ -409,10 +378,10 @@ if __name__ == "__main__":
 
     # check js_file
     if js_file == '$TINTPY_HOME/data':
-        js_file = os.path.join(os.environ['TINTPY_HOME'],
-                               'dygraph-combined.js')
+        js_file = os.path.join(os.environ['TINTPY_HOME'], 'tintpy', 'data', 'dygraph-combined.js')
     else:
         js_file = os.path.abspath(js_file)
+
     if not os.path.isfile(js_file):
         sys.exit("{} does not exist".format(js_file))
 

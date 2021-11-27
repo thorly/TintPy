@@ -21,25 +21,14 @@ EXAMPLE = """Example:
 def cmd_line_parser():
     parser = argparse.ArgumentParser(
         description='Coregister all of SLCs to a reference SLC with DEM.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-
+        formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
     parser.add_argument('slc_dir', help='directory path of SLCs')
     parser.add_argument('dem_dir', help='directory of *.dem and *.dem.par')
-    parser.add_argument('mli_dir',
-                        help='output directory of multi-looked SLCs')
+    parser.add_argument('mli_dir', help='output directory of multi-looked SLCs')
     parser.add_argument('rslc_dir', help='output directory of RSLCs')
-    parser.add_argument('--rlks',
-                        help='range looks (defaults: 8)',
-                        default=8,
-                        type=int)
-    parser.add_argument('--alks',
-                        help='azimuth looks (defaults: 2)',
-                        default=2,
-                        type=int)
-    parser.add_argument('--ref_slc',
-                        help='reference SLC (default: the first slc)',
-                        default='0')
+    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
+    parser.add_argument('--alks', help='azimuth looks (defaults: 2)', default=2, type=int)
+    parser.add_argument('--ref_slc', help='reference SLC (default: the first slc)', default='0')
     inps = parser.parse_args()
 
     return inps

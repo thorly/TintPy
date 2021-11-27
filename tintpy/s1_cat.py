@@ -21,31 +21,14 @@ EXAMPLE = """Example:
 
 
 def cmdline_parse():
-    parser = argparse.ArgumentParser(
-        description=
-        'Concatenate adjacent Sentinel-1 TOPS SLC images(support two or three images)',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description='Concatenate adjacent Sentinel-1 TOPS SLC images(support two or three images)',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
     parser.add_argument('slc_dir', help='slc directory')
     parser.add_argument('save_dir', help='directory saving concatenated slc')
-    parser.add_argument('sub_swath',
-                        help='sub_swath number',
-                        type=int,
-                        nargs='+',
-                        choices=[1, 2, 3])
-    parser.add_argument('--pol',
-                        help='polarization(defaults: vv)',
-                        nargs='+',
-                        choices=['vv', 'vh'],
-                        default=['vv'])
-    parser.add_argument('--rlks',
-                        help='range looks(defaults: 8)',
-                        type=int,
-                        default=8)
-    parser.add_argument('--alks',
-                        help='azimuth looks(defaults: 2)',
-                        type=int,
-                        default=2)
+    parser.add_argument('sub_swath', help='sub_swath number', type=int, nargs='+', choices=[1, 2, 3])
+    parser.add_argument('--pol', help='polarization(defaults: vv)', nargs='+', choices=['vv', 'vh'], default=['vv'])
+    parser.add_argument('--rlks', help='range looks(defaults: 8)', type=int, default=8)
+    parser.add_argument('--alks', help='azimuth looks(defaults: 2)', type=int, default=2)
     inps = parser.parse_args()
 
     return inps
@@ -64,8 +47,7 @@ def get_state_vector(par_file):
     temp_list = []
     with open(par_file) as f:
         for line in f.readlines():
-            if line.startswith('state_vector_position_') or line.startswith(
-                    'state_vector_velocity_'):
+            if line.startswith('state_vector_position_') or line.startswith('state_vector_velocity_'):
                 temp_list.append(line.strip())
     for s in temp_list:
         line = re.split(r'\s+', s)
@@ -144,14 +126,12 @@ def get_new_par(par_file1, par_file2, new_par_file2):
     """
     state_vector_1 = get_state_vector(par_file1)
     state_vector_2 = get_state_vector(par_file2)
-    nonrepeated_state_vector, index = get_nonrepeated_state_vector(
-        state_vector_1, state_vector_2)
+    nonrepeated_state_vector, index = get_nonrepeated_state_vector(state_vector_1, state_vector_2)
     number_of_state_vectors = int(len(nonrepeated_state_vector) / 2)
 
     # calculate the new time_of_first_state_vector
     time_of_first_state_vector = get_time_of_first_state_vector(par_file2)
-    time_of_first_state_vector = float(
-        time_of_first_state_vector) + index / 2 * 10
+    time_of_first_state_vector = float(time_of_first_state_vector) + index / 2 * 10
     time_of_first_state_vector = str(time_of_first_state_vector) + '00000'
 
     # get content before 'number_of_state_vectors'
@@ -160,20 +140,13 @@ def get_new_par(par_file1, par_file2, new_par_file2):
     # write new par file
     with open(new_par_file2, 'w+', encoding='utf-8') as f:
         f.write(content)
-        f.write('number_of_state_vectors:' +
-                str(number_of_state_vectors).rjust(21, ' ') + '\n')
-        f.write('time_of_first_state_vector:' +
-                time_of_first_state_vector.rjust(18, ' ') + '   s' + '\n')
+        f.write('number_of_state_vectors:' + str(number_of_state_vectors).rjust(21, ' ') + '\n')
+        f.write('time_of_first_state_vector:' + time_of_first_state_vector.rjust(18, ' ') + '   s' + '\n')
         f.write('state_vector_interval:              10.000000   s' + '\n')
         nr = nonrepeated_state_vector
         for i in range(number_of_state_vectors):
-            f.write('state_vector_position_' + str(i + 1) + ':' +
-                    nr[i * 2][0].rjust(15, ' ') + nr[i * 2][1].rjust(16, ' ') +
-                    nr[i * 2][2].rjust(16, ' ') + '   m   m   m' + '\n')
-            f.write('state_vector_velocity_' + str(i + 1) + ':' +
-                    nr[i * 2 + 1][0].rjust(15, ' ') +
-                    nr[i * 2 + 1][1].rjust(16, ' ') +
-                    nr[i * 2 + 1][2].rjust(16, ' ') + '   m/s m/s m/s' + '\n')
+            f.write('state_vector_position_' + str(i + 1) + ':' + nr[i * 2][0].rjust(15, ' ') + nr[i * 2][1].rjust(16, ' ') + nr[i * 2][2].rjust(16, ' ') + '   m   m   m' + '\n')
+            f.write('state_vector_velocity_' + str(i + 1) + ':' + nr[i * 2 + 1][0].rjust(15, ' ') + nr[i * 2 + 1][1].rjust(16, ' ') + nr[i * 2 + 1][2].rjust(16, ' ') + '   m/s m/s m/s' + '\n')
 
 
 def read_gamma_par(par_file, keyword):
@@ -347,12 +320,9 @@ def cat_three_slc(date_slc_dirs, sub_swath, pol, rlks, alks, out_dir):
     date = os.path.basename(date_slc_dirs[0])[0:8]
 
     # get start time
-    slc_par1 = os.path.join(date_slc_dirs[0],
-                            f'{date}.iw{sub_swath[0]}.{pol[0]}.slc.par')
-    slc_par2 = os.path.join(date_slc_dirs[1],
-                            f'{date}.iw{sub_swath[0]}.{pol[0]}.slc.par')
-    slc_par3 = os.path.join(date_slc_dirs[2],
-                            f'{date}.iw{sub_swath[0]}.{pol[0]}.slc.par')
+    slc_par1 = os.path.join(date_slc_dirs[0], f'{date}.iw{sub_swath[0]}.{pol[0]}.slc.par')
+    slc_par2 = os.path.join(date_slc_dirs[1], f'{date}.iw{sub_swath[0]}.{pol[0]}.slc.par')
+    slc_par3 = os.path.join(date_slc_dirs[2], f'{date}.iw{sub_swath[0]}.{pol[0]}.slc.par')
     start_time1, _ = get_time_and_direction(slc_par1)
     start_time2, _ = get_time_and_direction(slc_par2)
     start_time3, _ = get_time_and_direction(slc_par3)
@@ -366,16 +336,12 @@ def cat_three_slc(date_slc_dirs, sub_swath, pol, rlks, alks, out_dir):
 
     # first case: slc1 or slc2 is middle slc
     if middle_time in [start_time1, start_time2]:
-        cat_two_slc(date_slc_dirs[0], date_slc_dirs[1], sub_swath, pol, rlks,
-                    alks, out_dir)
-        cat_two_slc(date_slc_dirs[2], tmp_dir, sub_swath, pol, rlks, alks,
-                    out_dir)
+        cat_two_slc(date_slc_dirs[0], date_slc_dirs[1], sub_swath, pol, rlks, alks, out_dir)
+        cat_two_slc(date_slc_dirs[2], tmp_dir, sub_swath, pol, rlks, alks, out_dir)
     # second case: slc3 is middle slc
     else:
-        cat_two_slc(date_slc_dirs[0], date_slc_dirs[2], sub_swath, pol, rlks,
-                    alks, out_dir)
-        cat_two_slc(date_slc_dirs[1], tmp_dir, sub_swath, pol, rlks, alks,
-                    out_dir)
+        cat_two_slc(date_slc_dirs[0], date_slc_dirs[2], sub_swath, pol, rlks, alks, out_dir)
+        cat_two_slc(date_slc_dirs[1], tmp_dir, sub_swath, pol, rlks, alks, out_dir)
 
     # delete tmp_dir
     shutil.rmtree(tmp_dir)

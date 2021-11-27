@@ -22,32 +22,16 @@ EXAMPLE = """Example:
 
 def cmdLineParse():
     parser = argparse.ArgumentParser(
-        description=
-        'Generate SLC from Sentinel-1 raw data with orbit correction using GAMMA.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+        description='Generate SLC from Sentinel-1 raw data with orbit correction using GAMMA.',
+        formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
 
     parser.add_argument('s1_zip_dir', help='Sentinel-1 raw directory')
     parser.add_argument('orbit_dir', help='precise orbit directory')
     parser.add_argument('slc_dir', help='directory for saving slc')
-    parser.add_argument('sub_swath',
-                        help='sub_swath number',
-                        type=int,
-                        choices=[1, 2, 3],
-                        nargs='+')
-    parser.add_argument('--pol',
-                        help='polarization(defaults: vv)',
-                        nargs='+',
-                        choices=['vv', 'vh'],
-                        default=['vv'])
-    parser.add_argument('--rlks',
-                        help='range looks(default: 8)',
-                        type=int,
-                        default=8)
-    parser.add_argument('--alks',
-                        help='azimuth looks(default: 2)',
-                        type=int,
-                        default=2)
+    parser.add_argument('sub_swath', help='sub_swath number', type=int, choices=[1, 2, 3], nargs='+')
+    parser.add_argument('--pol', help='polarization(defaults: vv)', nargs='+', choices=['vv', 'vh'], default=['vv'])
+    parser.add_argument('--rlks', help='range looks(default: 8)', type=int, default=8)
+    parser.add_argument('--alks', help='azimuth looks(default: 2)', type=int, default=2)
     inps = parser.parse_args()
 
     return inps
@@ -395,8 +379,7 @@ def main():
     dates = get_dates_from_zips(zip_files)
     orb_correct_res = []
     for date in dates:
-        same_date_zips = glob.glob(
-            os.path.join(zip_dir, f'S1*_IW_SLC*{date}*zip'))
+        same_date_zips = glob.glob(os.path.join(zip_dir, f'S1*_IW_SLC*{date}*zip'))
         same_date_zips = sorted(same_date_zips, key=lambda i: i[26:32])
         # one date --> one zip
         if len(same_date_zips) == 1:
@@ -406,8 +389,7 @@ def main():
             if not os.path.isdir(date_slc_dir):
                 os.mkdir(date_slc_dir)
             # run all step
-            res = run_all_steps(zip_file, date_slc_dir, orb_dir, pol,
-                                sub_swath, rlks, alks)
+            res = run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks)
             orb_correct_res += res
         # one date --> multi zips
         else:
@@ -418,8 +400,7 @@ def main():
                 if not os.path.isdir(date_slc_dir):
                     os.mkdir(date_slc_dir)
                 # run all step
-                res = run_all_steps(zip_file, date_slc_dir, orb_dir, pol,
-                                    sub_swath, rlks, alks)
+                res = run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks)
                 orb_correct_res += res
 
     print_orb_correct_report(orb_correct_res)

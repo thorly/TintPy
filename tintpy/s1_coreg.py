@@ -20,40 +20,18 @@ EXAMPLE = """Example:
 
 
 def cmd_line_parser():
-    parser = argparse.ArgumentParser(description='Coregister all of the Sentinel-1 TOPS SLCs to a reference SLC.',\
-                                     formatter_class=argparse.RawTextHelpFormatter,\
-                                     epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description='Coregister all of the Sentinel-1 TOPS SLCs to a reference SLC.',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='SLCs directory')
     parser.add_argument('rslc_dir', help='RSLCs directory')
-    parser.add_argument('dem_dir',
-                        help='dem directory including *.dem and *.dem.par')
-    parser.add_argument('sub_swath',
-                        type=int,
-                        nargs='+',
-                        choices=[1, 2, 3],
-                        help='sub_swath number for coregistration')
-    parser.add_argument('--pol',
-                        help='polarization(defaults: vv)',
-                        choices=['vv', 'vh'],
-                        default='vv')
-    parser.add_argument('--rlks',
-                        help='range looks (defaults: 8)',
-                        default=8,
-                        type=int)
-    parser.add_argument('--alks',
-                        help='azimuth looks (defaults: 2)',
-                        default=2,
-                        type=int)
-    parser.add_argument('--ref_slc',
-                        help='reference SLC (defaults: the first slc)',
-                        default='0',
-                        type=str)
-    parser.add_argument(
-        '--deramp_flag',
-        choices=['t', 'T', 'f', 'F'],
-        help='flag for deramp later (t for YES, f for No, defaults: f)',
-        default='f')
+    parser.add_argument('dem_dir', help='dem directory including *.dem and *.dem.par')
+    parser.add_argument('sub_swath', type=int, nargs='+', choices=[1, 2, 3], help='sub_swath number for coregistration')
+    parser.add_argument('--pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
+    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
+    parser.add_argument('--alks', help='azimuth looks (defaults: 2)', default=2, type=int)
+    parser.add_argument('--ref_slc', help='reference SLC (defaults: the first slc)', default='0', type=str)
+    parser.add_argument('--deramp_flag', choices=['t', 'T', 'f', 'F'], help='flag for deramp later (t for YES, f for No, defaults: f)', default='f')
     inps = parser.parse_args()
 
     return inps

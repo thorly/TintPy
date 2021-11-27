@@ -4,6 +4,7 @@
 # Copyright (c) 2021, Lei Yuan #
 # Author: Lei Yuan, 2021       #
 ################################
+
 import argparse
 import math
 import os
@@ -273,13 +274,9 @@ def download_progress(blocknum, blocksize, totalsize):
     percent = 100.0 * blocknum * blocksize / totalsize
     if percent > 100:
         percent = 100
-        print("\rDownloaded: " + "#" * int(percent / 2) + " %.2f%%" % percent,
-              end="\n",
-              flush=True)
+        print("\rDownloaded: " + "#" * int(percent / 2) + " %.2f%%" % percent, end="\n", flush=True)
     else:
-        print("\rDownloading: " + "#" * int(percent / 2) + " %.2f%%" % percent,
-              end=" ",
-              flush=True)
+        print("\rDownloading: " + "#" * int(percent / 2) + " %.2f%%" % percent, end=" ", flush=True)
 
 
 def download_dem(url, out_dir):
@@ -307,25 +304,10 @@ EXAMPLE = '''Example:
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(
-        description='Download SRTM DEM [30m 90m] and ALOS DSM [30m].',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-    parser.add_argument('flag',
-                        type=str,
-                        choices=[
-                            'alos', 'ALOS', 'srtm9011', 'srtm3011', 'SRTM9011',
-                            'SRTM3011', 'srtm9055', 'SRTM9055'
-                        ],
-                        help='DEM type')
-    parser.add_argument('bound',
-                        type=float,
-                        nargs=4,
-                        help='DEM bound (W E S N)')
-    parser.add_argument('-o',
-                        dest='out_dir',
-                        type=str,
-                        help='directory for saving DEM')
+    parser = argparse.ArgumentParser(description='Download SRTM DEM [30m 90m] and ALOS DSM [30m].', formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
+    parser.add_argument('flag',type=str, choices=['alos', 'ALOS', 'srtm9011', 'srtm3011', 'SRTM9011', 'SRTM3011', 'srtm9055', 'SRTM9055'], help='DEM type')
+    parser.add_argument('bound', type=float, nargs=4,help='DEM bound (W E S N)')
+    parser.add_argument('-o',dest='out_dir', type=str, help='directory for saving DEM')
     inps = parser.parse_args()
 
     return inps

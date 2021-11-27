@@ -19,44 +19,17 @@ EXAMPLE = '''Example:
 
 
 def cmdLineParse():
-    parser = argparse.ArgumentParser(
-        description=
-        'Copy required bursts and mosaic them for Sentinel-1 TOPS SLC.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description= 'Copy required bursts and mosaic them for Sentinel-1 TOPS SLC.',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='slc directory')
     parser.add_argument('out_slc_dir', help='directory saving processed slc')
-    parser.add_argument('-s',
-                        dest='sub_swath',
-                        help='sub_swath number',
-                        type=int,
-                        nargs='+',
-                        choices=[1, 2, 3],
-                        required=True)
-    parser.add_argument('-b',
-                        dest='burst_num',
-                        help='burst number',
-                        type=int,
-                        nargs='+',
-                        required=True)
-    parser.add_argument('--pol',
-                        help='polarization(defaults: vv)',
-                        choices=['vv', 'vh'],
-                        default='vv')
-    parser.add_argument('--rlks',
-                        help='range looks (default: 8)',
-                        type=int,
-                        default=8)
-    parser.add_argument('--alks',
-                        help='azimuth looks (default: 2)',
-                        type=int,
-                        default=2)
-    parser.add_argument(
-        '--num',
-        help='number of slc used (default: -1, negative number for all)',
-        type=int,
-        default=-1)
+    parser.add_argument('-s', dest='sub_swath', help='sub_swath number', type=int, nargs='+', choices=[1, 2, 3], required=True)
+    parser.add_argument('-b', dest='burst_num', help='burst number', type=int, nargs='+', required=True)
+    parser.add_argument('--pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
+    parser.add_argument('--rlks', help='range looks (default: 8)', type=int, default=8)
+    parser.add_argument('--alks', help='azimuth looks (default: 2)', type=int, default=2)
+    parser.add_argument('--num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
 
     inps = parser.parse_args()
 
@@ -115,8 +88,7 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
         os.system(call_str)
 
 
-def slc_copy(date_slc_dir, sub_swath, pol, start_burst, end_burst, rlks, alks,
-             out_dir):
+def slc_copy(date_slc_dir, sub_swath, pol, start_burst, end_burst, rlks, alks, out_dir):
     """Copy multiple bursts from a Sentinel-1 TOPS mode SLC
 
     Args:
@@ -196,8 +168,7 @@ def copy_mosaic_one(date_slc_dir, sub_swath, pol, bursts, rlks, alks, out_dir):
         alks (int): azimuth looks
         out_dir (str): output directory
     """
-    slc_tab = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1],
-                       rlks, alks, out_dir)
+    slc_tab = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1], rlks, alks, out_dir)
     slc_mosaic(slc_tab, rlks, alks, out_dir)
 
 
@@ -213,10 +184,8 @@ def copy_mosaic_two(date_slc_dir, sub_swath, pol, bursts, rlks, alks, out_dir):
         alks (int): azimuth looks
         out_dir (str): output directory
     """
-    slc_tab1 = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1],
-                        rlks, alks, out_dir)
-    slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3],
-                        rlks, alks, out_dir)
+    slc_tab1 = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1], rlks, alks, out_dir)
+    slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3], rlks, alks, out_dir)
 
     slc_tab = os.path.join(out_dir, 'slc_tab')
     write_tab([slc_tab1, slc_tab2], slc_tab)
@@ -237,12 +206,9 @@ def copy_mosaic_three(date_slc_dir, sub_swath, pol, bursts, rlks, alks,
         alks (int): azimuth looks
         out_dir (str): output directory
     """
-    slc_tab1 = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1],
-                        rlks, alks, out_dir)
-    slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3],
-                        rlks, alks, out_dir)
-    slc_tab3 = slc_copy(date_slc_dir, sub_swath[2], pol, bursts[4], bursts[5],
-                        rlks, alks, out_dir)
+    slc_tab1 = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1], rlks, alks, out_dir)
+    slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3], rlks, alks, out_dir)
+    slc_tab3 = slc_copy(date_slc_dir, sub_swath[2], pol, bursts[4], bursts[5], rlks, alks, out_dir)
 
     slc_tab = os.path.join(out_dir, 'slc_tab')
     write_tab([slc_tab1, slc_tab2, slc_tab3], slc_tab)
@@ -272,8 +238,7 @@ def main():
         if sorted(sub_swath) == [1, 2] or sorted(sub_swath) == [2, 3]:
             pass
         else:
-            sys.exit(
-                "Error sub_swath for two sub_swaths, it must be 1 2 or 2 3.")
+            sys.exit("Error sub_swath for two sub_swaths, it must be 1 2 or 2 3.")
     if len(sub_swath) == 3:
         if sorted(sub_swath) != [1, 2, 3]:
             sys.exit("Error sub_swath for three sub_swaths, must be 1 2 3.")
@@ -282,8 +247,7 @@ def main():
         sys.exit('Error sub_swath or butst_num.')
 
     # get all dates
-    dates = sorted(
-        [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+    dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
 
     if dates:
         if slc_num < 0 or slc_num > len(dates):
@@ -304,8 +268,7 @@ def main():
                 exec_func = copy_mosaic_one
             else:
                 exec_func = copy_mosaic_one
-            exec_func(date_slc_dir, sub_swath, pol, burst_num, rlks, alks,
-                        out_date_slc_dir)
+            exec_func(date_slc_dir, sub_swath, pol, burst_num, rlks, alks,out_date_slc_dir)
 
         print('\nAll done, enjoy it!\n')
     else:

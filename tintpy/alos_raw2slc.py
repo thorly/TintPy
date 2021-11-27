@@ -18,25 +18,12 @@ EXAMPLE = """Example:
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(
-        description='Convert ALOS PALSAR raw data (level 1.0) to SLC data',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-
-    parser.add_argument(
-        'data_dir',
-        help='directory including ALOS level 1.0 data (**unzip data first**)')
+    parser = argparse.ArgumentParser(description='Convert ALOS PALSAR raw data (level 1.0) to SLC data',formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser.add_argument('data_dir', help='directory including ALOS level 1.0 data (**unzip data first**)')
     parser.add_argument('output_dir', help='directory for saving ALOS SLC')
-    parser.add_argument('antenna_file',
-                        help='ALOS PALSAR JAXA antenna pattern file')
-    parser.add_argument('--rlks',
-                        help='range looks (defaults: 8)',
-                        default=8,
-                        type=int)
-    parser.add_argument('--alks',
-                        help='azimuth looks (defaults: 16)',
-                        default=16,
-                        type=int)
+    parser.add_argument('antenna_file', help='ALOS PALSAR JAXA antenna pattern file')
+    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
+    parser.add_argument('--alks', help='azimuth looks (defaults: 16)', default=16, type=int)
 
     inps = parser.parse_args()
     return inps

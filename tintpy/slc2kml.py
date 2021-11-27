@@ -18,28 +18,13 @@ EXAMPLE = """Example:
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(
-        description="Make kml with dem and SLC using GAMMA.",
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-    parser.add_argument('slc_dir',
-                        help='slc directory contains slc and slc_par.',
-                        type=str)
-    parser.add_argument('dem_dir',
-                        help='dem directory contains *.dem and *.dem.par.',
-                        type=str)
+    parser = argparse.ArgumentParser(description="Make kml with dem and SLC using GAMMA.", formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser.add_argument('slc_dir', help='slc directory contains slc and slc_par.', type=str)
+    parser.add_argument('dem_dir', help='dem directory contains *.dem and *.dem.par.', type=str)
     parser.add_argument('out_dir', help='directory for saving kml.', type=str)
-    parser.add_argument('--extension',
-                        help='file extension for slc (defaults: .rslc)',
-                        default='.rslc')
-    parser.add_argument('--rlks',
-                        help='range looks (defaults: 28).',
-                        type=int,
-                        default=28)
-    parser.add_argument('--alks',
-                        help='azimuth looks (defaults: 7).',
-                        type=int,
-                        default=7)
+    parser.add_argument('--extension', help='file extension for slc (defaults: .rslc)', default='.rslc')
+    parser.add_argument('--rlks', help='range looks (defaults: 28).', type=int, default=28)
+    parser.add_argument('--alks', help='azimuth looks (defaults: 7).', type=int, default=7)
 
     inps = parser.parse_args()
     return inps
@@ -79,8 +64,7 @@ def main():
         extension = '.' + extension
 
     # check slc_dir
-    slcs = glob.glob(slc_dir + '/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' +
-                     extension)
+    slcs = glob.glob(slc_dir + '/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' + extension)
     slc_pars = [i + '.par' for i in slcs]
     for i, j in zip(slcs, slc_pars):
         if os.path.isfile(i) and os.path.isfile(j):

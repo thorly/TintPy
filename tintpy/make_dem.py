@@ -4,6 +4,7 @@
 # Copyright (c) 2021, Lei Yuan #
 # Author: Lei Yuan, 2021       #
 ################################
+
 import argparse
 import os
 import sys
@@ -31,8 +32,7 @@ def read_gdal_file(file, band=1):
     xsize = ds.RasterXSize
     ysize = ds.RasterYSize
     lon_lat = [
-        trans[0], trans[0] + xsize * trans[1], trans[3] + ysize * trans[5],
-        trans[3]
+        trans[0], trans[0] + xsize * trans[1], trans[3] + ysize * trans[5], trans[3]
     ]
     ds = None
     xstep = trans[1]
@@ -53,7 +53,7 @@ def plot_data(data, lon_lat, out_file, cmap='rainbow'):
     """
     plt.figure()
     ax = plt.gca()
-    im = ax.imshow(data, extent=lon_lat, cmap='rainbow')
+    im = ax.imshow(data, extent=lon_lat, cmap=cmap)
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="3%", pad=0.05)
@@ -297,22 +297,11 @@ EXAMPLE = '''Example:
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(
-        description=
-        'Make DEM used in interferometry both for GAMMA and SARSCAPE processor.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-    parser.add_argument('processor',
-                        type=str,
-                        choices=['GAMMA', 'gamma', 'SARSCAPE', 'sarscape'],
-                        help='interferometry processor [ gamma or sarscape ]')
-    parser.add_argument('out_file',
-                        type=str,
-                        help='output dem file name')
-    parser.add_argument('tifs',
-                        type=str,
-                        nargs='+',
-                        help='tif(hgt) or zips files for making DEM')
+    parser = argparse.ArgumentParser(description='Make DEM used in interferometry both for GAMMA and SARSCAPE processor.',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser.add_argument('processor', type=str, choices=['GAMMA', 'gamma', 'SARSCAPE', 'sarscape'], help='interferometry processor [ gamma or sarscape ]')
+    parser.add_argument('out_file', type=str, help='output dem file name')
+    parser.add_argument('tifs', type=str, nargs='+', help='tif(hgt) or zips files for making DEM')
     inps = parser.parse_args()
 
     return inps

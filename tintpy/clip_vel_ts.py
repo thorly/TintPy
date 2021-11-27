@@ -25,33 +25,18 @@ EXAMPLE = """Example:
 def cmdline_parser():
     parser = argparse.ArgumentParser(
         description="Clip velocity or timeseries data using kml or kmz",
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
-    parser.add_argument('data_file',
-                        help='original velocity or timeseries data')
-    parser.add_argument('data_flag',
-                        choices=['t', 'T', 'v', 'V'],
-                        help='data flag, t for timeseries, v for velocity')
+        formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
+    parser.add_argument('data_file', help='original velocity or timeseries data')
+    parser.add_argument('data_flag', choices=['t', 'T', 'v', 'V'], help='data flag, t for timeseries, v for velocity')
     parser.add_argument('kml', help='kml or kmz file for clipping data')
-    parser.add_argument(
-        '-n',
-        dest='num_flag',
-        choices=['t', 'T', 'f', 'F'],
-        default='t',
-        help='first column of data is point number [t] or not [f] (defaults: t)'
+    parser.add_argument('-n', dest='num_flag', choices=['t', 'T', 'f', 'F'],
+        default='t', help='first column of data is point number [t] or not [f] (defaults: t)'
     )
-    parser.add_argument(
-        '-a',
-        dest='area_flag',
-        default='s',
-        choices=['s', 'S', 'm', 'M'],
+    parser.add_argument('-a', dest='area_flag', default='s', choices=['s', 'S', 'm', 'M'],
         help='kml file contain single area [s] or multi area [m] (defaults: s)'
     )
 
-    parser.add_argument('-o',
-                        dest='out_dir',
-                        default='.',
-                        help='output directory (defaults: .)')
+    parser.add_argument('-o', dest='out_dir', default='.', help='output directory (defaults: .)')
 
     inps = parser.parse_args()
     return inps
@@ -87,8 +72,7 @@ def ray_intersect_segment(point, s_point, e_point):
     if s_point[0] < point[0] and e_point[0] < point[0]:
         return False
     # find the intersection
-    xseg = e_point[0] - (e_point[0] - s_point[0]) * (e_point[1] - point[1]) / (
-        e_point[1] - s_point[1])
+    xseg = e_point[0] - (e_point[0] - s_point[0]) * (e_point[1] - point[1]) / (e_point[1] - s_point[1])
     # intersection is to the left of point
     if xseg < point[0]:
         return False
@@ -145,7 +129,7 @@ def kml2polygon_dict(kml_file):
 
     # parse kml
     root_node = dom_tree.documentElement
-    placemarks = root_node.getElementsByTagName('placemark')
+    placemarks = root_node.getElementsByTagName('Placemark')
 
     polygon_dict = {}
     j = 0
@@ -155,11 +139,9 @@ def kml2polygon_dict(kml_file):
         ploygon = placemark.getElementsByTagName('Polygon')[0]
         outerBoundaryIs = ploygon.getElementsByTagName('outerBoundaryIs')[0]
         LinearRing = outerBoundaryIs.getElementsByTagName('LinearRing')[0]
-        coordinates = LinearRing.getElementsByTagName(
-            'coordinates')[0].childNodes[0].data
+        coordinates = LinearRing.getElementsByTagName('coordinates')[0].childNodes[0].data
         lon_lat = [i.split(',')[0:2] for i in coordinates.strip().split()]
-        polygon_dict[name + '_' + str(j)] = np.asarray(lon_lat,
-                                                       dtype='float32')
+        polygon_dict[name + '_' + str(j)] = np.asarray(lon_lat, dtype='float32')
         j += 1
 
     return polygon_dict
@@ -293,6 +275,7 @@ def clip_single_vel_with_kml(kml_file, vel_file, num_flag, out_dir):
             out_file = os.path.join(out_dir, vel_file_name + '_clip.txt')
             print(f'Writing data to {out_file}')
             np.savetxt(out_file, out_data[1:, :], fmt='%4f')
+            print('\nAll done, enjoy it!\n')
 
 
 def clip_single_ts_with_kml(kml_file, ts_file, num_flag, out_dir):
@@ -310,8 +293,7 @@ def clip_single_ts_with_kml(kml_file, ts_file, num_flag, out_dir):
 
     for _, polygon in polygon_dict.items():
         lon_lat = get_extremum(polygon)
-        first_clipped_data = clip_data_with_lonlat(data, lon_lat, 't',
-                                                   num_flag)
+        first_clipped_data = clip_data_with_lonlat(data, lon_lat, 't', num_flag)
 
         out_data = data[0, :]
 
@@ -327,6 +309,7 @@ def clip_single_ts_with_kml(kml_file, ts_file, num_flag, out_dir):
             out_file = os.path.join(out_dir, ts_file_name + '_clip.txt')
             print(f'Writing data to {out_file}')
             np.savetxt(out_file, out_data, fmt='%4f')
+            print('\nAll done, enjoy it!\n')
 
 
 def clip_multi_vel_with_kml(kml_file, vel_file, num_flag, out_dir):
@@ -391,8 +374,7 @@ def clip_multi_ts_with_kml(kml_file, ts_file, num_flag, out_dir):
         out_data = data[0, :]
 
         lon_lat = get_extremum(polygon)
-        first_clipped_data = clip_data_with_lonlat(data, lon_lat, 't',
-                                                   num_flag)
+        first_clipped_data = clip_data_with_lonlat(data, lon_lat, 't', num_flag)
 
         for line in first_clipped_data[1:, :]:
             if point_within_polygon(line[1:3], polygon):
@@ -432,19 +414,15 @@ def main():
     # cut timeseries data
     if data_flag == 't':
         if area_flag == 's':
-            p = Process(target=clip_single_ts_with_kml,
-                        args=(kml, data_file, num_flag, out_dir))
+            p = Process(target=clip_single_ts_with_kml, args=(kml, data_file, num_flag, out_dir))
         else:
-            p = Process(target=clip_multi_ts_with_kml,
-                        args=(kml, data_file, num_flag, out_dir))
+            p = Process(target=clip_multi_ts_with_kml, args=(kml, data_file, num_flag, out_dir))
     # cut velocity data
     else:
         if area_flag == 's':
-            p = Process(target=clip_single_vel_with_kml,
-                        args=(kml, data_file, num_flag, out_dir))
+            p = Process(target=clip_single_vel_with_kml, args=(kml, data_file, num_flag, out_dir))
         else:
-            p = Process(target=clip_multi_vel_with_kml,
-                        args=(kml, data_file, num_flag, out_dir))
+            p = Process(target=clip_multi_vel_with_kml, args=(kml, data_file, num_flag, out_dir))
 
     p.start()
     p.join()

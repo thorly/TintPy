@@ -12,29 +12,18 @@ import sys
 
 
 def cmd_line_parser():
-    parser = argparse.ArgumentParser(
-        description='Copy a common segment from an existing set of SLCs',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description='Copy a common segment from an existing set of SLCs', formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='SLCs directory')
     parser.add_argument('out_dir', help='Output directory')
-    parser.add_argument('roff',
-                        help='offset to starting rangle sample',
-                        type=int)
+    parser.add_argument('roff', help='offset to starting rangle sample', type=int)
     parser.add_argument('nr', help='number of range samples', type=int)
     parser.add_argument('loff', help='offset to starting line', type=int)
     parser.add_argument('nl', help='number of lines', type=int)
     parser.add_argument('--rlks', help='range looks', type=int, default=8)
     parser.add_argument('--alks', help='azimuth looks', type=int, default=2)
-    parser.add_argument(
-        '--num',
-        help='number of slc used (default: -1, negative number for all)',
-        type=int,
-        default=-1)
-    parser.add_argument('--extension',
-                        help='file extension for SLCs (defaults: .rslc)',
-                        default='.rslc')
+    parser.add_argument('--num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
+    parser.add_argument('--extension', help='file extension for SLCs (defaults: .rslc)', default='.rslc')
 
     inps = parser.parse_args()
 

@@ -4,6 +4,7 @@
 # Copyright (c) 2021, Lei Yuan #
 # Author: Lei Yuan, 2021       #
 ################################
+
 import argparse
 import glob
 import os
@@ -23,65 +24,27 @@ EXAMPLE = """Example:
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(
-        description=
-        'Generate differential interferogram images and unwrap them from RSLCs using GAMMA.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description= 'Generate differential interferogram images and unwrap them from RSLCs using GAMMA.',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('rslc_dir', help='RSLCs directory')
     parser.add_argument('out_dir', help='Output directory')
-    parser.add_argument('dem_dir',
-                        help='DEM directory contains *.dem and *.dem.par')
-    parser.add_argument('ref_slc', help='reference RSLC')
-    parser.add_argument('--rlks',
-                        help='range looks (defaults: 8)',
-                        default=8,
-                        type=int)
-    parser.add_argument('--alks',
-                        help='azimuth looks (defaults: 2)',
-                        default=2,
-                        type=int)
-    parser.add_argument('--max_sb',
-                        dest='max_sb',
-                        type=float,
-                        help='maximum spatial baseline')
-    parser.add_argument('--max_tb',
-                        dest='max_tb',
-                        type=float,
-                        help='maximum temporal baseline')
-    parser.add_argument(
-        '--method',
-        dest='method',
-        default='sbas',
-        choices={'sbas', 'sequential'},
+    parser.add_argument('dem_dir', help='DEM directory contains *.dem and *.dem.par')
+    parser.add_argument('ref_slc', help='reference RSLC for making rdc dem')
+    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
+    parser.add_argument('--alks', help='azimuth looks (defaults: 2)', default=2, type=int)
+    parser.add_argument('--max_sb', dest='max_sb', type=float, help='maximum spatial baseline')
+    parser.add_argument('--max_tb', dest='max_tb', type=float, help='maximum temporal baseline')
+    parser.add_argument('--method', dest='method', default='sbas', choices={'sbas', 'sequential'},
         help='network selection method:\n' +
         'sbas - select based on the threshold values of the spatio-temporal baselines\n'
         +
-        'sequential - select based on the sequential of the SAR acquisitions\n'
-    )
-    parser.add_argument(
-        '--con_num',
-        dest='con_num',
-        type=int,
-        default=4,
-        help=
-        'Number of the neibour-connected SAR images at one side for sequential method (defaults: 4)'
-    )
-    parser.add_argument('--extension',
-                        dest='slc_extension',
-                        type=str,
-                        default='.rslc',
-                        help='file extension for RSLCs (defaults: .rslc)')
-    parser.add_argument(
-        '--gacos_dir',
-        dest='gacos_dir',
-        help='directory contains GACOS files (tif) for aps correction')
-    parser.add_argument(
-        '--wavelength',
-        dest='wavelength',
-        type=float,
-        help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
+        'sequential - select based on the sequential of the SAR acquisitions\n')
+    parser.add_argument('--con_num', dest='con_num', type=int, default=4,
+        help='Number of the neibour-connected SAR images at one side for sequential method (defaults: 4)')
+    parser.add_argument('--extension', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
+    parser.add_argument('--gacos_dir', dest='gacos_dir', help='directory contains GACOS files (tif) for aps correction')
+    parser.add_argument('--wavelength', dest='wavelength', type=float, help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
 
     inps = parser.parse_args()
     return inps
@@ -201,8 +164,7 @@ def read_gdal_file(file, band=1):
     xsize = ds.RasterXSize
     ysize = ds.RasterYSize
     lon_lat = [
-        trans[0], trans[0] + xsize * trans[1], trans[3] + ysize * trans[5],
-        trans[3]
+        trans[0], trans[0] + xsize * trans[1], trans[3] + ysize * trans[5], trans[3]
     ]
     ds = None
     xstep = trans[1]
@@ -238,8 +200,7 @@ def interp_gacos(gacos_file, dem_seg_par, wavelength, incidence, out_file):
     lat_step, lon_step = values[4], values[5]
 
     lon = np.linspace(upper_left_lon, upper_left_lon + lon_step * width, width)
-    lat = np.linspace(upper_left_lat, upper_left_lat + lat_step * length,
-                      length)
+    lat = np.linspace(upper_left_lat, upper_left_lat + lat_step * length, length)
 
     lons, lats = np.meshgrid(lon, lat)
 
@@ -251,12 +212,10 @@ def interp_gacos(gacos_file, dem_seg_par, wavelength, incidence, out_file):
 
     lons_gacos, lats_gacos = np.meshgrid(lon, lat)
 
-    ori_grid = pyresample.geometry.SwathDefinition(lons=lons_gacos,
-                                                   lats=lats_gacos)
+    ori_grid = pyresample.geometry.SwathDefinition(lons=lons_gacos, lats=lats_gacos)
     dst_grid = pyresample.geometry.SwathDefinition(lons=lons, lats=lats)
 
-    ztd_phase_interp = pyresample.kd_tree.resample_gauss(
-        ori_grid, ztd, dst_grid, radius_of_influence=500000, sigmas=25000)
+    ztd_phase_interp = pyresample.kd_tree.resample_gauss( ori_grid, ztd, dst_grid, radius_of_influence=500000, sigmas=25000)
 
     range2phase = -4 * np.pi / wavelength * np.cos(incidence)
 
@@ -270,8 +229,7 @@ def geocode(file, width_geo, lookup_table, width, length, out_file):
     os.system(call_str)
 
 
-def sub_gacos_from_int(int_file, length, m_gacos_file, s_gacos_file,
-                       int_correct_file):
+def sub_gacos_from_int(int_file, length, m_gacos_file, s_gacos_file, int_correct_file):
     m_gacos = read_gamma(m_gacos_file, length, 'float32')
     s_gacos = read_gamma(s_gacos_file, length, 'float32')
     diff_gacos = m_gacos - s_gacos
@@ -292,7 +250,7 @@ def mli_all(slc_tab, out_dir, rlks, alks):
 
                 date = os.path.basename(slc)[0:8]
 
-                mli = date + '.mli'
+                mli = date + '.rmli'
                 mli_par = mli + '.par'
 
                 call_str = f"multi_look {slc} {slc_par} {mli} {mli_par} {rlks} {alks}"
@@ -380,9 +338,8 @@ def calc_time_delta(pair):
     return time_delta
 
 
-def comb_pic(pic_dir, extension, out_pic):
-    abs_path = os.path.join(pic_dir, extension)
-    cmd_str = f"montage -label %f -geometry +5+7 -tile +6 -resize 300x300 {abs_path} {out_pic}"
+def comb_pic(pic_path, out_pic):
+    cmd_str = f"montage -label %f -geometry +5+7 -tile +6 -resize 300x300 {pic_path} {out_pic}"
     os.system(cmd_str)
 
 
@@ -436,8 +393,7 @@ def main():
     if not slc_extension.startswith('.'):
         slc_extension = '.' + slc_extension
 
-    m_rslc_par = os.path.join(rslc_dir, ref_slc,
-                              ref_slc + slc_extension + '.par')
+    m_rslc_par = os.path.join(rslc_dir, ref_slc, ref_slc + slc_extension + '.par')
 
     # check gacos
     if gacos_dir and wavelength:
@@ -462,7 +418,7 @@ def main():
     mk_tab(rslc_dir, slc_tab, slc_extension)
     mli_all(slc_tab, mli_dir, rlks, alks)
 
-    sm_mli = os.path.join(mli_dir, ref_slc + '.mli')
+    sm_mli = os.path.join(mli_dir, ref_slc + '.rmli')
     sm_mli_par = sm_mli + '.par'
 
     # select pairs
@@ -472,8 +428,7 @@ def main():
             if not os.path.isdir(base_dir):
                 os.mkdir(base_dir)
 
-            pairs = select_pairs_sbas(slc_tab, m_rslc_par, max_sb, max_tb,
-                                      base_dir)
+            pairs = select_pairs_sbas(slc_tab, m_rslc_par, max_sb, max_tb, base_dir)
         else:
             sys.exit('Spatio-temporal baselines are required for sbas method')
     if method == 'sequential':
@@ -508,31 +463,24 @@ def main():
         for date in dates:
             gacos_file = date + '.ztd.tif'
             out_file = gacos_file + '.phase'
-            interp_gacos(gacos_file, dem_seg_par, wavelength, incidence,
-                         out_file)
+            interp_gacos(gacos_file, dem_seg_par, wavelength, incidence, out_file)
             out_file2 = out_file + '.rdc'
-            geocode(out_file, width_geo, lookup_fine, width_mli, length_mli,
-                    out_file2)
+            geocode(out_file, width_geo, lookup_fine, width_mli, length_mli, out_file2)
 
     diff_dir = os.path.join(out_dir, 'diff')
     if not os.path.isdir(diff_dir):
         os.mkdir(diff_dir)
+    os.chdir(diff_dir)
 
     # diff and unwrap
     for pair in pairs:
-        pair_dir = os.path.join(diff_dir, pair)
-        if not os.path.isdir(pair_dir):
-            os.mkdir(pair_dir)
-
-        os.chdir(pair_dir)
-
         m_date = pair[0:8]
         s_date = pair[9:17]
 
-        m_mli = os.path.join(mli_dir, m_date + '.mli')
+        m_mli = os.path.join(mli_dir, m_date + '.rmli')
         m_mli_par = m_mli + '.par'
 
-        s_mli = os.path.join(mli_dir, s_date + '.mli')
+        s_mli = os.path.join(mli_dir, s_date + '.rmli')
         s_mli_par = s_mli + '.par'
 
         m_rslc = os.path.join(rslc_dir, m_date, m_date + slc_extension)
@@ -547,9 +495,6 @@ def main():
         os.system(call_str)
 
         call_str = f"base_orbit {m_rslc_par} {s_rslc_par} {pair}.base"
-        os.system(call_str)
-
-        call_str = f"base_perp {pair}.base {m_rslc_par} {pair}.off > {pair}.base.perp"
         os.system(call_str)
 
         call_str = f'echo " {pair}\\n\\n\\n\\n\\n" > diff_par.in'
@@ -606,8 +551,7 @@ def main():
             int_file = f"{pair}.diff"
             int_correct_file = f"{pair}.diff.gacos"
 
-            sub_gacos_from_int(int_file, length_mli, m_gacos, s_gacos,
-                               int_correct_file)
+            sub_gacos_from_int(int_file, length_mli, m_gacos, s_gacos, int_correct_file)
 
             call_str = f"adf {pair}.diff.gacos {pair}.adf.diff.gacos {pair}.adf.cc.gacos {width_mli} 0.75 32 5 4 0 0 .2"
             os.system(call_str)
@@ -640,16 +584,16 @@ def main():
         del_file('off_par.in')
         del_file(f'{pair}.plot')
 
-    comb_pic(diff_dir + '/*/', '*.diff.bmp', out_dir + '/diff.jpg')
-    comb_pic(diff_dir + '/*/', '*.adf.diff.bmp', out_dir + '/adf.diff.jpg')
-    comb_pic(diff_dir + '/*/', '*.adf.unw.bmp', out_dir + '/adf.unw.jpg')
-    comb_pic(diff_dir + '/*/', '*.adf.unw.sub.bmp', out_dir + '/adf.unw.sub.jpg')
+    comb_pic(diff_dir + '/*.diff.bmp', out_dir + '/diff.jpg')
+    comb_pic(diff_dir + '/*.adf.diff.bmp', out_dir + '/adf.diff.jpg')
+    comb_pic(diff_dir + '/*.adf.unw.bmp', out_dir + '/adf.unw.jpg')
+    comb_pic(diff_dir + '/*.adf.unw.sub.bmp', out_dir + '/adf.unw.sub.jpg')
 
     if gacos_dir and wavelength:
-        comb_pic(diff_dir + '/*/', '*.diff.gacos.bmp', out_dir + '/diff.gacos.jpg')
-        comb_pic(diff_dir + '/*/', '*.adf.diff.gacos.bmp', out_dir + '/adf.diff.gacos.jpg')
-        comb_pic(diff_dir + '/*/', '*.adf.unw.gacos.bmp', out_dir + '/adf.unw.gacos.jpg')
-        comb_pic(diff_dir + '/*/', '*.adf.unw.gacos.sub.bmp', out_dir + '/adf.unw.gacos.sub.jpg')
+        comb_pic(diff_dir + '/*.diff.gacos.bmp', out_dir + '/diff.gacos.jpg')
+        comb_pic(diff_dir + '/*.adf.diff.gacos.bmp', out_dir + '/adf.diff.gacos.jpg')
+        comb_pic(diff_dir + '/*.adf.unw.gacos.bmp', out_dir + '/adf.unw.gacos.jpg')
+        comb_pic(diff_dir + '/*.adf.unw.gacos.sub.bmp', out_dir + '/adf.unw.gacos.sub.jpg')
 
 
 if __name__ == "__main__":
