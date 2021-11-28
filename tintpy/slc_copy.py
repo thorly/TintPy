@@ -12,7 +12,8 @@ import sys
 
 
 def cmd_line_parser():
-    parser = argparse.ArgumentParser(description='Copy a common segment from an existing set of SLCs', formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description='Copy a common segment from an existing set of SLCs',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='SLCs directory')
     parser.add_argument('out_dir', help='Output directory')
@@ -108,8 +109,7 @@ def main():
         os.mkdir(out_dir)
 
     # get dates
-    dates = sorted(
-        [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+    dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
 
     # check dates
     if len(dates) < 1:
@@ -140,7 +140,7 @@ def main():
             slc_copy(slc, slc_par, roff, nr, loff, nl, out_slc, out_slc_par)
 
             bmp = out_slc + '.bmp'
-            slc2bmp(slc, slc_par, rlks, alks, bmp)
+            slc2bmp(out_slc, out_slc_par, rlks, alks, bmp)
 
     print('\nAll done, enjoy it.\n')
 

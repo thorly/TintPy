@@ -584,13 +584,13 @@ def main():
         del_file('off_par.in')
         del_file(f'{pair}.plot')
 
-    comb_pic(diff_dir + '/*.diff.bmp', out_dir + '/diff.jpg')
+    comb_pic(diff_dir + '/*.adf.cc.bmp', out_dir + '/adf.cc.jpg')
     comb_pic(diff_dir + '/*.adf.diff.bmp', out_dir + '/adf.diff.jpg')
     comb_pic(diff_dir + '/*.adf.unw.bmp', out_dir + '/adf.unw.jpg')
     comb_pic(diff_dir + '/*.adf.unw.sub.bmp', out_dir + '/adf.unw.sub.jpg')
 
     if gacos_dir and wavelength:
-        comb_pic(diff_dir + '/*.diff.gacos.bmp', out_dir + '/diff.gacos.jpg')
+        comb_pic(diff_dir + '/*.adf.cc.gacos.bmp', out_dir + '/adf.cc.gacos.jpg')
         comb_pic(diff_dir + '/*.adf.diff.gacos.bmp', out_dir + '/adf.diff.gacos.jpg')
         comb_pic(diff_dir + '/*.adf.unw.gacos.bmp', out_dir + '/adf.unw.gacos.jpg')
         comb_pic(diff_dir + '/*.adf.unw.gacos.sub.bmp', out_dir + '/adf.unw.gacos.sub.jpg')
