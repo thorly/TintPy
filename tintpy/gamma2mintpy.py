@@ -22,9 +22,9 @@ def cmd_line_parser():
     parser.add_argument('mli_dir', help='mli directory')
     parser.add_argument('geo_dir', help='geo directory')
     parser.add_argument('mintpy_dir', help='output directory')
-    parser.add_argument('--mli_extension', dest='mli_extension', default='rmli', help='mli file extension (defaults: rmli)')
-    parser.add_argument('--unw_extension', dest='unw_extension', default='adf.unw', help='unw file extension (defaults: adf.unw)')
-    parser.add_argument('--cc_extension', dest='cc_extension', default='adf.cc', help='cc file extension (defaults: adf.cc)')
+    parser.add_argument('-m', dest='mli_extension', default='rmli', help='mli file extension (defaults: rmli)')
+    parser.add_argument('-u', dest='unw_extension', default='adf.unw', help='unw file extension (defaults: adf.unw)')
+    parser.add_argument('-c', dest='cc_extension', default='adf.cc', help='cc file extension (defaults: adf.cc)')
     inps = parser.parse_args()
 
     return inps
@@ -32,7 +32,7 @@ def cmd_line_parser():
 
 EXAMPLE = """Example:
   python3 gamma2mintpy2d.py /ly/diff /ly/mli /ly/geo /ly/MintPy
-  python3 gamma2mintpy2d.py /ly/diff /ly/mli /ly/geo /ly/MintPy --unw_extension adf.unw.gacos --cc_extension adf.cc.gacos
+  python3 gamma2mintpy2d.py /ly/diff /ly/mli /ly/geo /ly/MintPy -u adf.unw.gacos -c adf.cc.gacos
 """
 
 
@@ -170,6 +170,16 @@ def main():
         dst_unw = 'diff_' + pair + '_' + rlks + 'rlks.unw'
         dst_unw_path = os.path.join(dst_ifg_dir, dst_unw)
         shutil.copy(unw_path, dst_unw_path)
+
+    # copy notebook to mintpy_dir
+    try:
+        TINTPY_HOME = os.environ['TINTPY_HOME']
+        notebook1 = os.path.join(TINTPY_HOME, 'tintpy', 'notebook', 'MintPy.ipynb')
+        notebook2 = os.path.join(TINTPY_HOME, 'tintpy', 'notebook', 'read_mintpy.ipynb')
+        shutil.copy(notebook1, mintpy_dir)
+        shutil.copy(notebook2, mintpy_dir)
+    except Exception as e:
+        print(e)
 
     print('\nAll done, enjoy it!\n')
 

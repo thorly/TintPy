@@ -20,7 +20,7 @@ from pykml.factory import KML_ElementMaker as KML
 EXAMPLE = r"""Example:
   python3 make_km_velz.py vels.txt vels.kmz
   python3 make_kmz_vel.py vels.txt vels.kmz -v -100 100 -c jet -s 0.6 -n f 
-  # data format
+  # data format (the first column is not important)
   num1 lon1 lat1 vel1
   num2 lon2 lat2 vel2
   num3 lon3 lat3 vel3
@@ -54,13 +54,16 @@ wkhDdEwDPtVkAFoAFYAFYABaABWABWAAWgAXwOttPxi1EjO7EVwYAAAAASUVORK5CYII="""
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(description='Display velocity derived by InSAR in Google Earth.', formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description='Display velocity derived by InSAR in Google Earth.',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
     parser.add_argument('vel_file', help='formatted velocity file for making KMZ file')
     parser.add_argument('out_file', help='output KMZ file')
-    parser.add_argument('-v', dest='vlim', nargs=2, metavar=('MIN', 'MAX'), type=float, default=(-60, 60), help='velocity limits (defaults: -60 60)')
+    parser.add_argument('-v', dest='vlim', nargs=2, metavar=('MIN', 'MAX'), type=float,
+        default=(-60, 60), help='velocity limits (defaults: -60 60)')
     parser.add_argument('-c', dest='colormap', default='jet', help='colormap (defaults: jet)')
     parser.add_argument('-s', dest='scale', default=0.8, type=float, help='scale of point for display (defaults: 0.8)')
-    parser.add_argument('-n', dest='num_flag', default='t', choices=['t', 'T', 'f', 'F'], help='first column of data is point number [t] or not [f] (defaults: t)')
+    parser.add_argument('-n', dest='num_flag', default='t', choices=['t', 'T', 'f', 'F'],
+        help='first column of data is point number [t] or not [f] (defaults: t)')
 
     inps = parser.parse_args()
     return inps

@@ -12,19 +12,20 @@ import sys
 import zipfile
 
 EXAMPLE = """Example:
-  python3 slc2kml.py /ly/slc/20201229 /ly/dem /ly/kml 28 7 --extension .slc
   python3 slc2kml.py /ly/slc/20201229 /ly/dem /ly/kml 28 7
+  python3 slc2kml.py /ly/slc/20201229 /ly/dem /ly/kml 28 7 -e .slc
 """
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(description="Make kml with dem and SLC using GAMMA.", formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser = argparse.ArgumentParser(description="Make kml with dem and SLC using GAMMA.",
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
     parser.add_argument('slc_dir', help='slc directory contains slc and slc_par.', type=str)
     parser.add_argument('dem_dir', help='dem directory contains *.dem and *.dem.par.', type=str)
     parser.add_argument('out_dir', help='directory for saving kml.', type=str)
     parser.add_argument('rlks', help='range looks.', type=int)
     parser.add_argument('alks', help='azimuth looks.', type=int)
-    parser.add_argument('--extension', help='file extension for slc (defaults: .rslc)', default='.rslc')
+    parser.add_argument('-e', dest='extension', help='file extension for slc (defaults: .rslc)', default='.rslc')
 
     inps = parser.parse_args()
     return inps

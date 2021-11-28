@@ -14,9 +14,9 @@ import sys
 
 EXAMPLE = """Example:
   [Note: This script only concatenates adjacent SLC processed by s1_zip2slc.py]
-  python3 s1_cat.py slc slc_cat 1 --rlks 8 --rlks 2
-  python3 s1_cat.py slc slc_cat 1 2 --rlks 8 --rlks 2
-  python3 s1_cat.py slc slc_cat 1 2 3 --rlks 20 --alks 5 --pol vv
+  python3 s1_cat.py slc slc_cat 1 -r 8 -a 2
+  python3 s1_cat.py slc slc_cat 1 2 -r 8 -a 2
+  python3 s1_cat.py slc slc_cat 1 2 3 -r 20 -a 5 -p vv
 """
 
 
@@ -26,9 +26,9 @@ def cmdline_parse():
     parser.add_argument('slc_dir', help='slc directory')
     parser.add_argument('save_dir', help='directory saving concatenated slc')
     parser.add_argument('sub_swath', help='sub_swath number', type=int, nargs='+', choices=[1, 2, 3])
-    parser.add_argument('--rlks', help='range looks', type=int, required=True)
-    parser.add_argument('--alks', help='azimuth looks', type=int, required=True)
-    parser.add_argument('--pol', help='polarization(defaults: vv)', nargs='+', choices=['vv', 'vh'], default=['vv'])
+    parser.add_argument('-r', dest='rlks', help='range looks', type=int, required=True)
+    parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
+    parser.add_argument('-p', dest='pol', help='polarization(defaults: vv)', nargs='+', choices=['vv', 'vh'], default=['vv'])
     inps = parser.parse_args()
 
     return inps

@@ -12,10 +12,10 @@ import sys
 
 EXAMPLE = '''Example:
   # one sub_swath (sub_swath1 start_burst: 1 end_burst: 3)
-  python3 s1_copy_mosaic.py /ly/slc /ly/slc_extract -s 1 -b 1 3 --rlks 20 --alks 5
+  python3 s1_copy_mosaic.py /ly/slc /ly/slc_extract -s 1 -b 1 3 -r 20 -a 5
 
   # multi sub_swaths (sub_swath1 start_burst: 1 end_burst: 3, sub_swath2 start_burst: 2 end_burst: 4)
-  python3 s1_copy_mosaic.py /ly/slc /ly/slc_extract -s 1 2 -b 1 3 2 4 --rlks 20 --alks 5 --pol vv
+  python3 s1_copy_mosaic.py /ly/slc /ly/slc_extract -s 1 2 -b 1 3 2 4 -r 20 -a 5 -p vv
 '''
 
 
@@ -27,10 +27,10 @@ def cmdLineParse():
     parser.add_argument('out_slc_dir', help='directory saving processed slc')
     parser.add_argument('-s', dest='sub_swath', help='sub_swath number', type=int, nargs='+', choices=[1, 2, 3], required=True)
     parser.add_argument('-b', dest='burst_num', help='burst number', type=int, nargs='+', required=True)
-    parser.add_argument('--rlks', help='range looks', type=int, required=True)
-    parser.add_argument('--alks', help='azimuth looks', type=int, required=True)
-    parser.add_argument('--pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
-    parser.add_argument('--num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
+    parser.add_argument('-r', dest='rlks', help='range looks', type=int, required=True)
+    parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
+    parser.add_argument('-p', dest='pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
+    parser.add_argument('-n', dest='num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
 
     inps = parser.parse_args()
 

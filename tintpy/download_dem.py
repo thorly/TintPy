@@ -296,16 +296,20 @@ def download_dem(url, out_dir):
 EXAMPLE = '''Example:
   # only get urls of srtm30 or srtm90 (1*1 degree)
   python3 download_dem.py srtm3011 100 101 20 24
+
   # get urls srtm90 and download them (5*5 degrees)
   python3 download_dem.py srtm9055 100 101 20 24 -o /ly/dem
-  # get urls of alos DEM and download them
+
+  # get urls of ALOS DSM and download them
   python3 download_dem.py alos 100 101 20 24 -o /ly/dem
 '''
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(description='Download SRTM DEM [30m 90m] and ALOS DSM [30m].', formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
-    parser.add_argument('flag',type=str, choices=['alos', 'ALOS', 'srtm9011', 'srtm3011', 'SRTM9011', 'SRTM3011', 'srtm9055', 'SRTM9055'], help='DEM type')
+    parser = argparse.ArgumentParser(description='Download SRTM DEM [30m 90m] and ALOS DSM [30m].',
+        formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
+    parser.add_argument('flag',type=str,
+        choices=['alos', 'ALOS', 'srtm9011', 'srtm3011', 'SRTM9011', 'SRTM3011', 'srtm9055', 'SRTM9055'], help='DEM type')
     parser.add_argument('bound', type=float, nargs=4,help='DEM bound (W E S N)')
     parser.add_argument('-o',dest='out_dir', type=str, help='directory for saving DEM')
     inps = parser.parse_args()

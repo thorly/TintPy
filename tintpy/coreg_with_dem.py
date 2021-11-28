@@ -13,8 +13,8 @@ import shutil
 import sys
 
 EXAMPLE = """Example:
-  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 4 6
-  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 2 10 --ref_slc 20201111
+  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 20211229 4 6
+  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 20211229 2 10
 """
 
 
@@ -26,9 +26,9 @@ def cmd_line_parser():
     parser.add_argument('dem_dir', help='directory of *.dem and *.dem.par')
     parser.add_argument('mli_dir', help='output directory of multi-looked SLCs')
     parser.add_argument('rslc_dir', help='output directory of RSLCs')
+    parser.add_argument('ref_slc', help='reference SLC', type=str)
     parser.add_argument('rlks', help='range looks', type=int)
     parser.add_argument('alks', help='azimuth looks', type=int)
-    parser.add_argument('--ref_slc', help='reference SLC (default: the first slc)', default='0')
     inps = parser.parse_args()
 
     return inps
@@ -212,14 +212,11 @@ def main():
         sys.exit('No enough SLCs.')
 
     # check ref_slc
-    if ref_slc == '0':
-        ref_slc = dates[0]
+    if re.findall(r'^\d{8}$', ref_slc):
+        if not ref_slc in dates:
+            sys.exit('No slc for {}.'.format(ref_slc))
     else:
-        if re.findall(r'^\d{8}$', ref_slc):
-            if not ref_slc in dates:
-                sys.exit('No slc for {}.'.format(ref_slc))
-        else:
-            sys.exit('Error date for ref_slc.')
+        sys.exit('Error date for ref_slc.')
 
     m_date = ref_slc
     # write slc_tab

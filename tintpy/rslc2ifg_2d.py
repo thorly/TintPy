@@ -33,13 +33,13 @@ def cmd_line_parser():
     parser.add_argument('out_dir', help='output directory for saving results')
     parser.add_argument('rlks', help='range looks', type=int)
     parser.add_argument('alks', help='azimuth looks', type=int)
-    parser.add_argument('sm', dest='supermaster', help='reference SLC for making rdc dem', type=int)
+    parser.add_argument('ref_slc', help='reference SLC for making rdc dem', type=str)
     parser.add_argument('step', help='step number', type=int, choices=[1, 2, 3])
     parser.add_argument('-s', dest='max_sb', help='maximum spatial baseline', type=float)
     parser.add_argument('-t', dest='max_tb', help='maximum temporal baseline', type=float)
     parser.add_argument('-r', dest='roff', help='offset to starting range of section to unwrap', type=float)
     parser.add_argument('-l', dest='loff', help='offset to starting line of section to unwrap', type=float)
-    parser.add_argument('-extension', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
+    parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
     inps = parser.parse_args()
 
     return inps
@@ -161,7 +161,7 @@ def main():
     out_dir = os.path.abspath(inps.out_dir)
     rlks = inps.rlks
     alks = inps.alks
-    supermaster = inps.supermaster
+    ref_slc = inps.ref_slc
     max_sb = inps.max_sb
     max_tb = inps.max_tb
     roff = inps.roff
@@ -195,6 +195,13 @@ def main():
     if len(all_date) < 2:
         sys.exit('No enough RSLCs.')
 
+    # check ref_slc
+    if re.findall(r'^\d{8}$', ref_slc):
+        if ref_slc not in all_date:
+            sys.exit('No rslc for {}.'.format(ref_slc))
+    else:
+        sys.exit('Error date for ref_slc.')
+
     # check extension
     if not extension.startswith('.'):
         extension = '.' + extension
@@ -202,11 +209,11 @@ def main():
     rmli_dir = os.path.join(out_dir, 'mli')
     rslc_tab = os.path.join(rmli_dir, 'rslc_tab')
 
-    m_rmli = os.path.join(rmli_dir, f"{supermaster}.rmli")
+    m_rmli = os.path.join(rmli_dir, f"{ref_slc}.rmli")
     m_rmli_par = m_rmli + '.par'
 
     geo_dir = os.path.join(out_dir, 'geo')
-    rdc_dem = os.path.join(geo_dir, f"{supermaster}.dem")
+    rdc_dem = os.path.join(geo_dir, f"{ref_slc}.dem")
 
     base_dir = os.path.join(out_dir, 'base_calc')
     diff1_dir = os.path.join(out_dir, 'diff')
@@ -214,14 +221,7 @@ def main():
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Step 1 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     if step == 1:
-        if supermaster and max_sb and max_tb:
-            # check supermaster
-            if re.findall(r'^\d{8}$', str(supermaster)):
-                if str(supermaster) not in all_date:
-                    sys.exit('No rslc for {}.'.format(supermaster))
-            else:
-                sys.exit('Error date for supermaster.')
-
+        if max_sb and max_tb:
             # multilook RSLCs
             if not os.path.isdir(rmli_dir):
                 os.mkdir(rmli_dir)
@@ -229,7 +229,6 @@ def main():
             # write rslc_tab
             mk_tab(rslc_dir, rslc_tab, extension)
 
-            os.chdir(rmli_dir)
             mli_all(rslc_tab, rmli_dir, rlks, alks)
 
             # make rdc dem
@@ -242,7 +241,7 @@ def main():
             if not os.path.isdir(base_dir):
                 os.mkdir(base_dir)
 
-            m_rslc_par = os.path.join(rslc_dir, str(supermaster), str(supermaster) + extension + '.par')
+            m_rslc_par = os.path.join(rslc_dir, ref_slc, ref_slc + extension + '.par')
 
             os.chdir(base_dir)
             cmd_str = f"base_calc {rslc_tab} {m_rslc_par} bperp_file itab 1 1 0 {max_sb} 0 {max_tb}"
@@ -264,14 +263,14 @@ def main():
             comb_pic(diff1_dir + '/*.adf.diff.bmp', out_dir + '/adf.diff.jpg')
 
             print(
-                '\nStep 1 is done, you can run step 2 now.\npython3 diff_2d.py <rslc_dir> <dem_dir> <out_dir> <rlks> <alks> 2 -sm <supermaster> -r <roff> -l <loff>\n'
+                '\nStep 1 is done, you can run step 2 now.\npython3 diff_2d.py <rslc_dir> <dem_dir> <out_dir> <rlks> <alks> <ref_slc> 2 -r <roff> -l <loff>\n'
             )
         else:
-            sys.exit('supermaster max_sb and max_tb are required parameters for step 1.')
+            sys.exit('max_sb max_tb are required parameters for step 1.')
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Step 2 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     if step == 2:
-        if roff and loff and supermaster:
+        if roff and loff:
             os.chdir(base_dir)
 
             # mk_unw_2d
@@ -282,14 +281,14 @@ def main():
             comb_pic(diff1_dir + '/*.adf.unw.bmp', out_dir + '/adf.unw.jpg')
 
             print(
-                '\nStep 2 is done, you can run step 3 now.\npython3 diff_2d.py <rslc_dir> <dem_dir> <out_dir> <rlks> <alks> 3 -sm <supermaster> -r <roff> -l <loff>\n'
+                '\nStep 2 is done, you can run step 3 now.\npython3 diff_2d.py <rslc_dir> <dem_dir> <out_dir> <rlks> <alks> <ref_slc> 3 -r <roff> -l <loff>\n'
             )
         else:
-            sys.exit('supermaster roff and loff are required parameters for step 2.')
+            sys.exit('roff loff are required parameters for step 2.')
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Step 3 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     if step == 3:
-        if roff and loff and supermaster:
+        if roff and loff:
             if not os.path.isdir(diff2_dir):
                 os.mkdir(diff2_dir)
 
@@ -323,7 +322,7 @@ def main():
             print('\nAll done, enjoy it!\n')
         else:
             sys.exit(
-                'supermaster roff and loff are required parameters for step 3.'
+                'roff loff are required parameters for step 3.'
             )
 
 

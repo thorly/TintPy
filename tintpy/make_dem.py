@@ -299,7 +299,8 @@ EXAMPLE = '''Example:
 def cmdline_parser():
     parser = argparse.ArgumentParser(description='Make DEM used in interferometry both for GAMMA and SARSCAPE processor.',
         formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
-    parser.add_argument('processor', type=str, choices=['GAMMA', 'gamma', 'SARSCAPE', 'sarscape'], help='interferometry processor [ gamma or sarscape ]')
+    parser.add_argument('processor', type=str, choices=['GAMMA', 'gamma', 'SARSCAPE', 'sarscape'],
+        help='interferometry processor [ gamma or sarscape ]')
     parser.add_argument('out_file', type=str, help='output dem file name')
     parser.add_argument('tifs', type=str, nargs='+', help='tif(hgt) or zips files for making DEM')
     inps = parser.parse_args()

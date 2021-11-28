@@ -15,8 +15,8 @@ import sys
 import zipfile
 
 EXAMPLE = """Example:
-  python3 s1_zip2slc.py /ly/zip_dir /ly/orbits /ly/slc 1 --rlks 20 --alks 5
-  python3 s1_zip2slc.py /ly/zip_dir /ly/orbits /ly/slc 1 2 3 --rlks 20 --alks 5 --pol vv
+  python3 s1_zip2slc.py /ly/zip_dir /ly/orbits /ly/slc 1 -r 20 -a 5
+  python3 s1_zip2slc.py /ly/zip_dir /ly/orbits /ly/slc 1 2 3 -r 20 -a 5 -p vv
 """
 
 
@@ -29,9 +29,9 @@ def cmdLineParse():
     parser.add_argument('orbit_dir', help='precise orbit directory')
     parser.add_argument('slc_dir', help='directory for saving slc')
     parser.add_argument('sub_swath', help='sub_swath number', type=int, choices=[1, 2, 3], nargs='+')
-    parser.add_argument('--rlks', help='range looks', type=int, required=True)
-    parser.add_argument('--alks', help='azimuth looks', type=int, required=True)
-    parser.add_argument('--pol', help='polarization(defaults: vv)', nargs='+', choices=['vv', 'vh'], default=['vv'])
+    parser.add_argument('-r', dest='rlks', help='range looks', type=int, required=True)
+    parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
+    parser.add_argument('-p', dest='pol', help='polarization (defaults: vv)', nargs='+', choices=['vv', 'vh'], default=['vv'])
     inps = parser.parse_args()
 
     return inps

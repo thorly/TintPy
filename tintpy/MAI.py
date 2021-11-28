@@ -13,7 +13,7 @@ import sys
 
 EXAMPLE = """Example:
   python3 MAI.py /ly/rslc /ly/stacking /ly/dem 20211229 200 60 20 5
-  python3 MAI.py /ly/rslc /ly/stacking /ly/dem 20211229 200 60 20 5 --extension rslc.deramp
+  python3 MAI.py /ly/rslc /ly/stacking /ly/dem 20211229 200 60 20 5 -e rslc.deramp
 """
 
 
@@ -29,7 +29,7 @@ def cmdline_parser():
     parser.add_argument('max_tb', type=float, help='maximum temporal baseline')
     parser.add_argument('rlks', help='range looks', type=int)
     parser.add_argument('alks', help='azimuth looks', type=int)
-    parser.add_argument('--extension', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
+    parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
 
     inps = parser.parse_args()
     return inps
@@ -49,6 +49,28 @@ def mk_tab(slc_dir, slc_tab, slc_extension):
             slc = os.path.join(slc_dir, date, date + slc_extension)
             slc_par = slc + '.par'
             f.write(slc + '    ' + slc_par + '\n')
+
+
+def mli_all(slc_tab, out_dir, rlks, alks):
+    os.chdir(out_dir)
+    with open(slc_tab, 'r') as f:
+        for line in f.readlines():
+            if line.strip():
+                slc = line.strip().split()[0]
+                slc_par = line.strip().split()[1]
+
+                date = os.path.basename(slc)[0:8]
+
+                mli = date + '.rmli'
+                mli_par = mli + '.par'
+
+                call_str = f"multi_look {slc} {slc_par} {mli} {mli_par} {rlks} {alks}"
+                os.system(call_str)
+
+                width = read_gamma_par(mli_par, 'range_samples')
+
+                call_str = f"raspwr {mli} {width} 1 0 1 1 1. .35 1"
+                os.system(call_str)
 
 
 def base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir):
@@ -100,16 +122,14 @@ def read_gamma_par(par_file, keyword):
     return value
 
 
-def make_rdc_dem(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
+def make_rdc_dem(mli, mli_par, dem, dem_par, out_dir):
     """make radar coordinate dem
 
     Args:
-        slc (str): slc
-        slc_par (str): slc par
+        mli (str): multi-looked slc
+        mli_par (str): multi-looked slc par
         dem (str): dem
         dem_par (str): dem par
-        rlks (int): range looks
-        alks (int): azimuth looks
         out_dir (str): output directory
 
     Returns:
@@ -117,13 +137,7 @@ def make_rdc_dem(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
     """
     os.chdir(out_dir)
 
-    date = os.path.basename(slc)[0:8]
-
-    mli = f"{date}.mli"
-    mli_par = mli + '.par'
-
-    call_str = f"multi_look {slc} {slc_par} {mli} {mli_par} {rlks} {alks}"
-    os.system(call_str)
+    date = os.path.basename(mli)[0:8]
 
     call_str = f"gc_map {mli_par} - {dem_par} {dem} dem_seg.par dem_seg lookup_table 1 1 sim_sar u v inc psi pix ls_map 8 1"
     os.system(call_str)
@@ -239,13 +253,23 @@ def main():
 
     pairs = select_pairs_sbas(slc_tab, m_rslc_par, max_sb, max_tb, base_dir)
 
+    # multi-look
+    mli_dir = os.path.join(out_dir, 'mli')
+    if not os.path.isdir(mli_dir):
+        os.mkdir(mli_dir)
+
+    mli_all(slc_tab, mli_dir, rlks, alks)
+
     # making lookup table
     geo_dir = os.path.join(out_dir, 'geo')
 
     if not os.path.isdir(geo_dir):
         os.mkdir(geo_dir)
 
-    _ = make_rdc_dem(m_rslc, m_rslc_par, dem, dem_par, rlks, alks, geo_dir)
+    sm_mli = os.path.join(mli_dir, ref_slc + '.rmli')
+    sm_mli_par = sm_mli + '.par'
+
+    _ = make_rdc_dem(sm_mli, sm_mli_par, dem, dem_par, geo_dir)
 
     diff_dir = os.path.join(out_dir, 'diff')
 

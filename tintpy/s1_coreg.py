@@ -13,9 +13,9 @@ import shutil
 import sys
 
 EXAMPLE = """Example:
-  python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 2 --rlks 8 --alks 2
-  python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 1 2 --rlks 8 --alks 2 --ref_slc 20211229
-  python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 1 2 3 --rlks 8 --alks 2 --ref_slc 20211229 --deramp_flag t
+  python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 20211229 2 -r 8 -a 2
+  python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 20211229 1 2 -r 8 -a 2
+  python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 20211229 1 2 3 -r 8 -a 2 -f t
 """
 
 
@@ -26,12 +26,12 @@ def cmd_line_parser():
     parser.add_argument('slc_dir', help='SLCs directory')
     parser.add_argument('rslc_dir', help='RSLCs directory')
     parser.add_argument('dem_dir', help='dem directory including *.dem and *.dem.par')
+    parser.add_argument('ref_slc', help='reference SLC', type=str)
     parser.add_argument('sub_swath', type=int, nargs='+', choices=[1, 2, 3], help='sub_swath number for coregistration')
-    parser.add_argument('--rlks', help='range looks', type=int, required=True)
-    parser.add_argument('--alks', help='azimuth looks', type=int, required=True)
-    parser.add_argument('--pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
-    parser.add_argument('--ref_slc', help='reference SLC (defaults: the first slc)', default='0', type=str)
-    parser.add_argument('--deramp_flag', choices=['t', 'T', 'f', 'F'], help='flag for deramp later (t for YES, f for No, defaults: f)', default='f')
+    parser.add_argument('-r', dest='rlks', help='range looks', type=int, required=True)
+    parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
+    parser.add_argument('-p', dest='pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
+    parser.add_argument('-f', dest='deramp_flag', choices=['t', 'T', 'f', 'F'], help='flag for deramp later (t for YES, f for No, defaults: f)', default='f')
     inps = parser.parse_args()
 
     return inps
@@ -237,14 +237,11 @@ def main():
         sys.exit('No enough SLCs.')
 
     # check ref_slc
-    if ref_slc == '0':
-        ref_slc = dates[0]
+    if re.findall(r'^\d{8}$', ref_slc):
+        if not ref_slc in dates:
+            sys.exit('No slc for {}.'.format(ref_slc))
     else:
-        if re.findall(r'^\d{8}$', ref_slc):
-            if not ref_slc in dates:
-                sys.exit('No slc for {}.'.format(ref_slc))
-        else:
-            sys.exit('Error date for ref_slc.')
+        sys.exit('Error date for ref_slc.')
 
     m_date = ref_slc
     m_slc_dir = os.path.join(slc_dir, m_date)

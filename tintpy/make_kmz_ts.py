@@ -19,8 +19,8 @@ from pykml.factory import KML_ElementMaker as KML
 
 EXAMPLE = r"""Example:
   python3 make_kmz_ts.py ts.txt ts.kmz -v -100 100 -c rainbow
-  python3 make_kmz_ts.py ts.txt ts.kmz -j /home/ly/dygraph-combined.js
-  python3 make_kmz_ts.py ts.txt ts.kmz -j /home/ly/dygraph-combined.js -s 0.6 -n f
+  python3 make_kmz_ts.py ts.txt ts.kmz -j /ly/dygraph-combined.js
+  python3 make_kmz_ts.py ts.txt ts.kmz -j /ly/dygraph-combined.js -s 0.6 -n f
   # data format (the first column is not important)
     -1   -1   -1    -1       date1       date2       date3 ...
   num1 lon1 lat1  vel1 date1-disp1 date2-disp1 date3-disp1 ...

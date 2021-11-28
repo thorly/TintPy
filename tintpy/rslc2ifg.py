@@ -17,9 +17,9 @@ from osgeo import gdal
 import datetime
 
 EXAMPLE = """Example:
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 --max_sb 200 --max_tb 60
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 --method sequential --con_num 4
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 --max_sb 200 --max_tb 60 --gacos_dir /ly/gacos --wavelength 0.05546576
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -s 200 -t 60
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -m sequential -n 4
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -s 200 -t 60 -g /ly/gacos -l 0.05546576
 """
 
 
@@ -33,18 +33,18 @@ def cmdline_parser():
     parser.add_argument('ref_slc', help='reference RSLC for making rdc dem')
     parser.add_argument('rlks', help='range looks', type=int)
     parser.add_argument('alks', help='azimuth looks', type=int)
-    parser.add_argument('--max_sb', dest='max_sb', type=float, help='maximum spatial baseline')
-    parser.add_argument('--max_tb', dest='max_tb', type=float, help='maximum temporal baseline')
-    parser.add_argument('--method', dest='method', default='sbas', choices={'sbas', 'sequential'},
+    parser.add_argument('-s', dest='max_sb', type=float, help='maximum spatial baseline')
+    parser.add_argument('-t', dest='max_tb', type=float, help='maximum temporal baseline')
+    parser.add_argument('-m', dest='method', default='sbas', choices={'sbas', 'sequential'},
         help='network selection method:\n' +
         'sbas - select based on the threshold values of the spatio-temporal baselines\n'
         +
         'sequential - select based on the sequential of the SAR acquisitions\n')
-    parser.add_argument('--con_num', dest='con_num', type=int, default=4,
+    parser.add_argument('-n', dest='con_num', type=int, default=4,
         help='Number of the neibour-connected SAR images at one side for sequential method (defaults: 4)')
-    parser.add_argument('--extension', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
-    parser.add_argument('--gacos_dir', dest='gacos_dir', help='directory contains GACOS files (tif) for aps correction')
-    parser.add_argument('--wavelength', dest='wavelength', type=float, help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
+    parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
+    parser.add_argument('-g', dest='gacos_dir', help='directory contains GACOS files (tif) for aps correction')
+    parser.add_argument('-l', dest='wavelength', type=float, help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
 
     inps = parser.parse_args()
     return inps
@@ -386,8 +386,11 @@ def main():
                 sys.exit(f'Cannot find *.dem and *.dem.par in {dem_dir}.')
 
     # check ref_slc
-    if ref_slc not in dates:
-        sys.exit("RSLC for {} does not exist".format(ref_slc))
+    if re.findall(r'^\d{8}$', ref_slc):
+        if not ref_slc in dates:
+            sys.exit('No slc for {}.'.format(ref_slc))
+    else:
+        sys.exit('Error date for ref_slc.')
 
     # check extension
     if not slc_extension.startswith('.'):
