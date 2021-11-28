@@ -13,8 +13,8 @@ import shutil
 import sys
 
 EXAMPLE = """Example:
-  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 
-  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc --rlks 2 --alks 10 --ref_slc 20201111
+  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 4 6
+  python3 coreg_with_dem.py /ly/slc /ly/dem /ly/mli /ly/rslc 2 10 --ref_slc 20201111
 """
 
 
@@ -26,8 +26,8 @@ def cmd_line_parser():
     parser.add_argument('dem_dir', help='directory of *.dem and *.dem.par')
     parser.add_argument('mli_dir', help='output directory of multi-looked SLCs')
     parser.add_argument('rslc_dir', help='output directory of RSLCs')
-    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
-    parser.add_argument('--alks', help='azimuth looks (defaults: 2)', default=2, type=int)
+    parser.add_argument('rlks', help='range looks', type=int)
+    parser.add_argument('alks', help='azimuth looks', type=int)
     parser.add_argument('--ref_slc', help='reference SLC (default: the first slc)', default='0')
     inps = parser.parse_args()
 

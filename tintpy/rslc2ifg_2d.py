@@ -15,13 +15,13 @@ EXAMPLE = """Example:
   **You have to follow the steps in order**
 
   # Step 1 (mk_diff_2d --> mk_adf_2d)
-  python3 rslc2ifg_2d.py /ly/rslc /ly/dem /ly/diff_2d 10 2 1 -sm 20211229 -s 200 -t 60
+  python3 rslc2ifg_2d.py /ly/rslc /ly/dem /ly/diff_2d 10 2 20211229 1 -s 200 -t 60
 
   # Step 2 (set the starting point for unwrapping [disras *.adf.diff.bmp] --> mk_unw_2d)
-  python3 rslc2ifg_2d.py /ly/rslc /ly/dem /ly/diff_2d 10 2 2 -sm 20211229 -r 100 -l 200
+  python3 rslc2ifg_2d.py /ly/rslc /ly/dem /ly/diff_2d 10 2 20211229 2 -r 100 -l 200
 
   # Step 3 (mk_base_2d --> mk_diff_2d --> mk_adf_2d --> mk_unw_2d)
-  python3 rslc2ifg_2d.py /ly/rslc /ly/dem /ly/diff_2d 10 2 3 -sm 20211229 -r 100 -l 200
+  python3 rslc2ifg_2d.py /ly/rslc /ly/dem /ly/diff_2d 10 2 20211229 3 -r 100 -l 200
 """
 
 
@@ -33,8 +33,8 @@ def cmd_line_parser():
     parser.add_argument('out_dir', help='output directory for saving results')
     parser.add_argument('rlks', help='range looks', type=int)
     parser.add_argument('alks', help='azimuth looks', type=int)
+    parser.add_argument('sm', dest='supermaster', help='reference SLC for making rdc dem', type=int)
     parser.add_argument('step', help='step number', type=int, choices=[1, 2, 3])
-    parser.add_argument('-sm', dest='supermaster', help='reference SLC for making rdc dem', type=int)
     parser.add_argument('-s', dest='max_sb', help='maximum spatial baseline', type=float)
     parser.add_argument('-t', dest='max_tb', help='maximum temporal baseline', type=float)
     parser.add_argument('-r', dest='roff', help='offset to starting range of section to unwrap', type=float)

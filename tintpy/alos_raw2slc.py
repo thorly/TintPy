@@ -12,18 +12,19 @@ import re
 import sys
 
 EXAMPLE = """Example:
-  python3 alos_raw2slc.py /ly/ALOS_PALSAR_raw /ly/slc palsar_ant_20061024.dat --rlks 2 --alks 10
-  python3 alos_raw2slc.py /ly/ALOS_PALSAR_raw /ly/slc palsar_ant_20061024.dat --rlks 4 --alks 6
+  python3 alos_raw2slc.py /ly/ALOS_PALSAR_raw /ly/slc_fbd palsar_ant_20061024.dat 2 10
+  python3 alos_raw2slc.py /ly/ALOS_PALSAR_raw /ly/slc_fbs palsar_ant_20061024.dat 4 6
 """
 
 
 def cmdline_parser():
-    parser = argparse.ArgumentParser(description='Convert ALOS PALSAR raw data (level 1.0) to SLC data',formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
-    parser.add_argument('data_dir', help='directory including ALOS level 1.0 data (**unzip data first**)')
+    parser = argparse.ArgumentParser(description='Convert ALOS PALSAR raw data (level 1.0) to SLC data',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
+    parser.add_argument('data_dir', help='directory including ALOS level 1.0 data (**uncompress data first**)')
     parser.add_argument('output_dir', help='directory for saving ALOS SLC')
     parser.add_argument('antenna_file', help='ALOS PALSAR JAXA antenna pattern file')
-    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
-    parser.add_argument('--alks', help='azimuth looks (defaults: 16)', default=16, type=int)
+    parser.add_argument('rlks', help='range looks', type=int)
+    parser.add_argument('alks', help='azimuth looks', type=int)
 
     inps = parser.parse_args()
     return inps

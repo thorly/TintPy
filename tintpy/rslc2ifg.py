@@ -17,9 +17,9 @@ from osgeo import gdal
 import datetime
 
 EXAMPLE = """Example:
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 --rlks 20 --alks 5 --max_sb 200 --max_tb 60
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 --rlks 20 --alks 5 --method sequential --con_num 4
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 --rlks 20 --alks 5 --max_sb 200 --max_tb 60 --gacos_dir /ly/gacos --wavelength 0.05546576
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 --max_sb 200 --max_tb 60
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 --method sequential --con_num 4
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 --max_sb 200 --max_tb 60 --gacos_dir /ly/gacos --wavelength 0.05546576
 """
 
 
@@ -31,8 +31,8 @@ def cmdline_parser():
     parser.add_argument('out_dir', help='Output directory')
     parser.add_argument('dem_dir', help='DEM directory contains *.dem and *.dem.par')
     parser.add_argument('ref_slc', help='reference RSLC for making rdc dem')
-    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
-    parser.add_argument('--alks', help='azimuth looks (defaults: 2)', default=2, type=int)
+    parser.add_argument('rlks', help='range looks', type=int)
+    parser.add_argument('alks', help='azimuth looks', type=int)
     parser.add_argument('--max_sb', dest='max_sb', type=float, help='maximum spatial baseline')
     parser.add_argument('--max_tb', dest='max_tb', type=float, help='maximum temporal baseline')
     parser.add_argument('--method', dest='method', default='sbas', choices={'sbas', 'sequential'},

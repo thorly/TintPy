@@ -21,8 +21,8 @@ def cmd_line_parser():
     parser.add_argument('nr', help='number of range samples', type=int)
     parser.add_argument('loff', help='offset to starting line', type=int)
     parser.add_argument('nl', help='number of lines', type=int)
-    parser.add_argument('--rlks', help='range looks', type=int, default=8)
-    parser.add_argument('--alks', help='azimuth looks', type=int, default=2)
+    parser.add_argument('rlks', help='range looks', type=int)
+    parser.add_argument('alks', help='azimuth looks', type=int)
     parser.add_argument('--num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
     parser.add_argument('--extension', help='file extension for SLCs (defaults: .rslc)', default='.rslc')
 
@@ -32,9 +32,9 @@ def cmd_line_parser():
 
 
 EXAMPLE = """Example:
-   python3 slc_copy.py ./rslc ./rslc_cut 1 1000 1 1000
-   python3 slc_copy.py ./rslc ./rslc_cut 1 1000 1 1000 --rlks 8 --rlks 2 --num 1
-   python3 slc_copy.py ./rslc ./rslc_cut 1 1000 1 1000 --rlks 20 --alks 5 --extension slc
+   python3 slc_copy.py ./rslc ./rslc_cut 1 1000 1 1000 4 6
+   python3 slc_copy.py ./rslc ./rslc_cut 1 1000 1 1000 8 2 --num 1
+   python3 slc_copy.py ./rslc ./rslc_cut 1 1000 1 1000 20 5 --extension slc
 """
 
 

@@ -12,8 +12,8 @@ import re
 import sys
 
 EXAMPLE = """Example:
-  python3 alos2slc.py /ly/ALOS_PALSAR /ly/slc 1 --rlks 2 --alks 10
-  python3 alos2slc.py /ly/ALOS_PALSAR2 /ly/slc 2 --rlks 8 --alks 16
+  python3 alos2slc.py /ly/ALOS_PALSAR /ly/slc 1 2 10
+  python3 alos2slc.py /ly/ALOS_PALSAR2 /ly/slc 2 8 16
 """
 
 
@@ -21,11 +21,11 @@ def cmdline_parser():
     parser = argparse.ArgumentParser(
         description='Reformat EORC PALSAR + PALSAR2 level 1.1 CEOS format SLC data and generate the ISP parameter file',
         formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
-    parser.add_argument('data_dir', help='directory including ALOS level 1.1 data (**unzip data first**)')
+    parser.add_argument('data_dir', help='directory including ALOS level 1.1 data (**uncompress data first**)')
     parser.add_argument('output_dir', help='directory saving SLC')
     parser.add_argument('flag', choices=[1, 2], help='flag for data type (1 for PALSAR, 2 for PALSAR2)', type=int)
-    parser.add_argument('--rlks', help='range looks (defaults: 8)', default=8, type=int)
-    parser.add_argument('--alks', help='azimuth looks (defaults: 16)', default=16, type=int)
+    parser.add_argument('rlks', help='range looks', type=int)
+    parser.add_argument('alks', help='azimuth looks', type=int)
 
     inps = parser.parse_args()
     return inps
