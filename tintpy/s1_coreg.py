@@ -20,7 +20,7 @@ EXAMPLE = """Example:
 
 
 def cmd_line_parser():
-    parser = argparse.ArgumentParser(description='Coregister all of the Sentinel-1 TOPS SLCs to a reference SLC.',
+    parser = argparse.ArgumentParser(description='Coregistrate all of the Sentinel-1 TOPS SLCs to a reference SLC.',
         formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='SLCs directory')
