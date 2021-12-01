@@ -1,0 +1,75 @@
+How to run SBAS using StaMPS (GMT is required)
+
+1. Select points based on coherence
+
+    1.1. prepare required data structure (sbas_mli_cc.py)
+    1.2. enter SMALL_BASELINES folder
+    1.3. run mt_ml_select_gamma in MATLAB
+    1.4. run ps_info to check point number (you can rerun step 3 until you are satisfied)
+    1.5. run getparm to get all parameters
+    1.6. you can set these parametars [setparm('scla_deramp','y') setparm('unwrap_method','3d')]
+    1.7. run stamps(6,8)
+    1.8. run ps_plot('V-do') to view velocity, ps_plot('V-do', -1) to save it
+    1.9. run ps_plot('V-do', ts) to view and save time-series displacement
+
+
+2. Select points based on amplitude dispersion
+
+    2.1. prepare required data structure (sbas_mli_ad.py)
+    2.2. run mt_prep_gamma in terminal, and open MATLAB
+    2.3. run getparm to get all parameters, and you can set these parameters [setparm('density_rand', 20) setparm('weed_standard_dev',2)]
+    2.4. run stamps(1,5)
+    2.5. you can set these parametars [setparm('scla_deramp','y') setparm('unwrap_method','3d')]
+    2.6. run stamps(6,8)
+    2.7. run ps_plot('V-do') to view velocity, ps_plot('V-do', -1) to save it
+    2.8. run ps_plot('V-do', 'ts') to view and save time-series displacement
+
+3. Tropospheric correction
+
+    3.1. Phase-based-Linear tropospheric correction
+
+        3.1.1. create a folder named supermaster_date
+        3.1.2. copy supermaster_date.rslc.par to supermaster_date
+        3.1.3. run getparm_aps
+        3.1.4. run load('parms.mat')
+        3.1.5. run save('parms_aps.mat', 'heading','lambda','-append')
+        3.1.6. run aps_linear
+        3.1.7. run setparm('subtr_tropo', 'y'), setparm('tropo_method', 'a_l')
+        3.1.8. run stamps(7,8)
+        3.1.9. run ps_plot('V-dao', 'a_linear'), ps_plot('V-dao', 'a_linear', 'ts')
+
+    3.2. GACOS-based tropospheric correction
+
+        3.2.1. create a folder named supermaster_date
+        3.2.2. copy supermaster_date.rslc.par to supermaster_date
+        3.2.3. run getparm_aps
+        3.2.4. run load('parms.mat')
+        3.2.5. run save('parms_aps.mat', 'heading','lambda','-append')
+        3.2.6. run setparm_aps('gacos_datapath', './APS')
+        3.2.7. run aps_weather_model('gacos',1,3)
+        3.2.8. run setparm('subtr_tropo', 'y'), setparm('tropo_method', 'a_gacos')
+        3.2.9. run stamps(7,8)
+        3.2.10. run ps_plot('V-dao', 'a_gacos'), ps_plot('V-dao', 'a_gacos', 'ts')
+
+4. Fix error
+
+    4.1. run mt_ml_select_gamma
+
+        Error using  >= 
+        Matrix dimensions must agree.
+        Error in mt_ml_select_gamma (line 147)
+
+        change the code of mt_ml_select_gamma.m
+
+        coh=coh';
+        if ischar(coh_thresh)
+            coh_thresh=str2double(coh_thresh);
+        end
+        ix(:,:,i1)=coh>=coh_thresh;
+
+
+    4.2. run stamps(1,1)
+
+        change the code of sb_load_initial_gamma.m [line141]
+
+        xy=llh2local(lonlat',ll0)'*1000
