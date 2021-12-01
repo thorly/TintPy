@@ -111,8 +111,10 @@ def kml2polygon_dict(kml_file):
     Returns:
         dict: polygon
     """
+    flag = False
     # unzip kmz to get kml
     if kml_file.endswith('.kmz'):
+        flag = True
         dir_name = os.path.dirname(kml_file)
         with zipfile.ZipFile(kml_file, 'r') as f:
             files = f.namelist()
@@ -124,8 +126,8 @@ def kml2polygon_dict(kml_file):
 
     dom_tree = parse(kml_file)
 
-    if os.path.isfile(doc_kml):
-        os.remove(doc_kml)
+    if os.path.isfile(kml_file) and flag:
+        os.remove(kml_file)
 
     # parse kml
     root_node = dom_tree.documentElement
