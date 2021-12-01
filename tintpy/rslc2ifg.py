@@ -357,7 +357,7 @@ def main():
     method = inps.method
     con_num = inps.con_num
     slc_extension = inps.slc_extension
-    gacos_dir = inps.gacos_dir
+    gacos_dir = os.path.abspath(inps.gacos_dir)
     wavelength = inps.wavelength
 
     # check rslc_dir
@@ -453,7 +453,7 @@ def main():
     length_mli = int(length_mli)
 
     dem_seg_par = os.path.join(geo_dir, 'dem_seg.par')
-    lookup_fine = os.path.join(geo_dir, 'lookup_fine')
+    lookup_fine = os.path.join(geo_dir, 'lookup_table_fine')
     width_geo = read_gamma_par(dem_seg_par, 'width')
     width_geo = int(width_geo)
 

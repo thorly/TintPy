@@ -80,15 +80,18 @@ def main():
     slc_date = slc_name[0:8]
 
     # check dem_dir
-    dems = glob.glob(os.path.join(dem_dir, '*.dem'))
-    dem_pars = [i + '.par' for i in dems]
-    for i, j in zip(dems, dem_pars):
-        if os.path.isfile(i) and os.path.isfile(j):
-            dem = dems[0]
-            dem_par = dem + '.par'
-            break
-        else:
-            sys.exit('Cannot find *.dem or *.dem.par in {}'.format(dem_dir))
+    if not os.path.isdir(dem_dir):
+        sys.exit("{} does not exist.".format(dem_dir))
+    else:
+        dems = glob.glob(dem_dir + '/*.dem')
+        dem_pars = [i + '.par' for i in dems]
+        for i, j in zip(dems, dem_pars):
+            if os.path.isfile(i) and os.path.isfile(j):
+                dem = dems[0]
+                dem_par = dem + '.par'
+                break
+            else:
+                sys.exit(f'Cannot find *.dem and *.dem.par in {dem_dir}.')
 
     # check out_dir
     if not os.path.isdir(out_dir):
