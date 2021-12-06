@@ -37,14 +37,32 @@ EXAMPLE = """Example:
 
 
 def is_dir(dir):
+    """Check directory
+
+    Args:
+        dir (str): directory
+    """
     if not os.path.isdir(dir):
         sys.exit('{} does not exist'.format(dir))
 
 def mk_dir(dir):
+    """Make directory
+
+    Args:
+        dir (str): directory
+    """
     if not os.path.isdir(dir):
         os.mkdir(dir)
 
 def get_rlks(mli_par):
+    """Get rlks from par file
+
+    Args:
+        mli_par (str): par file
+
+    Returns:
+        str: rlks
+    """
     rlks = None
     with open(mli_par, 'r', encoding='utf-8') as f:
         for line in f.readlines():
@@ -54,6 +72,14 @@ def get_rlks(mli_par):
     return rlks
 
 def check_extension(extension):
+    """Check file extension
+
+    Args:
+        extension (str): extension
+
+    Returns:
+        str: extension
+    """
     if not extension.startswith('.'):
         extension = '.' + extension
 

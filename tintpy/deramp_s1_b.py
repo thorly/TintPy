@@ -17,23 +17,44 @@ EXAMPLE = """Example:
 
 
 def read_gamma_par(par_file, keyword):
-    value = ''
-    with open(par_file, 'r') as f:
-        for l in f.readlines():
-            if l.count(keyword) == 1:
-                tmp = l.split(':')
-                value = tmp[1].strip()
+    """Extract value from par_file using keyword
+
+    Args:
+        par_file (str): GAMMA parameter file
+        keyword (str): keyword like "reange_sample"
+    """
+    value = None
+    with open(par_file, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            if line.count(keyword) == 1:
+                value = line.split(':')[1].strip()
+
     return value
 
 
-def gen_bmp(slc, slc_par, rlks, alks):
+def slc2bmp(slc, slc_par, rlks, alks, bmp):
+    """Generate 8-bit raster graphics image of intensity of complex (SLC) data
+
+    Args:
+        slc (str): slc file
+        slc_par (str): slc par file
+        rlks (int): range looks
+        alks (int): azimuth looks
+        bmp (str): output bmp
+    """
     width = read_gamma_par(slc_par, 'range_samples')
-    bmp = slc + '.bmp'
-    call_str = f"rasSLC {slc} {width} 1 0 {rlks} {alks} 1. .35 1 0 0 {bmp}"
-    os.system(call_str)
+    if width:
+        call_str = f'rasSLC {slc} {width} 1 0 {rlks} {alks} 1. .35 1 0 0 {bmp}'
+        os.system(call_str)
 
 
 def write_tab(iw_slc_path, out_file):
+    """Write path of slc slc_par and tops_par to tab file
+
+    Args:
+        iw_slc_path (str): slc file
+        out_file (str): output file
+    """
     with open(out_file, 'w+') as f:
         f.write(
             f"{iw_slc_path} {iw_slc_path + '.par'} {iw_slc_path + '.tops_par'}\n"
@@ -151,7 +172,7 @@ def main():
         call_str = f"SLC_mosaic_S1_TOPS {tab_deramp} {slc_deramp} {slc_deramp_par} {rlks} {alks} 1"
         os.system(call_str)
 
-        gen_bmp(slc_deramp, slc_deramp_par, rlks, alks)
+        slc2bmp(slc_deramp, slc_deramp_par, rlks, alks, slc_deramp + '.bmp')
 
     print('\nAll done, enjoy it!\n')
 

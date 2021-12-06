@@ -46,16 +46,29 @@ def cmd_line_parser():
 
 
 def read_gamma_par(par_file, keyword):
-    value = ''
-    with open(par_file, 'r') as f:
-        for l in f.readlines():
-            if l.count(keyword) == 1:
-                tmp = l.split(':')
-                value = tmp[1].strip()
+    """Extract value from par_file using keyword
+
+    Args:
+        par_file (str): GAMMA parameter file
+        keyword (str): keyword like "reange_sample"
+    """
+    value = None
+    with open(par_file, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            if line.count(keyword) == 1:
+                value = line.split()[1].strip()
+
     return value
 
 
 def mk_tab(slc_dir, slc_tab, slc_extension):
+    """Generate SLC_tab for processing
+
+    Args:
+        slc_dir (str): slc directory
+        slc_tab (str): tab file
+        slc_extension (str): slc extension
+    """
     dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
     with open(slc_tab, 'w+') as f:
         for date in dates:
@@ -65,6 +78,12 @@ def mk_tab(slc_dir, slc_tab, slc_extension):
 
 
 def comb_pic(pic_path, out_pic):
+    """Combine all pictures to one
+
+    Args:
+        pic_path (str): picture path
+        out_pic (str): output picture
+    """
     cmd_str = f"montage -label %f -geometry +5+7 -tile +6 -resize 300x300 {pic_path} {out_pic}"
     os.system(cmd_str)
 
@@ -132,6 +151,14 @@ def make_rdc_dem(mli, mli_par, dem, dem_par, out_dir):
 
 
 def mli_all(slc_tab, out_dir, rlks, alks):
+    """Calculate MLI images for a stack of SLCs
+
+    Args:
+        slc_tab (str): slc tab file including slc slc_par
+        out_dir (str): output directory
+        rlks (int): range looks
+        alks (int): azimuth looks
+    """
     os.chdir(out_dir)
     with open(slc_tab, 'r') as f:
         for line in f.readlines():

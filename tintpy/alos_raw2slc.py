@@ -31,6 +31,14 @@ def cmdline_parser():
 
 
 def get_raw_names(data_dir):
+    """Get ALOS raw data names
+
+    Args:
+        data_dir (str): directory including raw data
+
+    Returns:
+        list: raw data names
+    """
     names = []
     files = os.listdir(data_dir)
     for file in files:
@@ -41,7 +49,14 @@ def get_raw_names(data_dir):
 
 
 def get_date(workreport):
-    """get date for ALOS PALSAR"""
+    """Get date from workreport file
+
+    Args:
+        workreport (str): workreport file
+
+    Returns:
+        str: date
+    """
     date = None
     with open(workreport, 'r') as f:
         for line in f.readlines():

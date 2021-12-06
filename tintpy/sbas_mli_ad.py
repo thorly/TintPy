@@ -62,6 +62,15 @@ def read_gamma_par(par_file, keyword):
 
 
 def gen_lon_lat(dem_par, lookup, diff_par, supermaster, out_dir):
+    """Generate lon and lat file for StaMPS processing
+
+    Args:
+        dem_par (str): dem par file
+        lookup (str): lookup table
+        diff_par (str): diff_par file
+        supermaster (str): master date
+        out_dir (srt): output directory
+    """
     # width of interferogram
     width = read_gamma_par(diff_par, 'range_samp_1')
     # length of inerferogram
@@ -120,6 +129,14 @@ def gen_lon_lat(dem_par, lookup, diff_par, supermaster, out_dir):
 
 
 def prep_sb_dir(mli_dir, diff_dir, supermaster, sb_dir):
+    """Prepare smallbaseline directory
+
+    Args:
+        mli_dir (str): mli directory
+        diff_dir (str): diff directory
+        supermaster (str): mater date
+        sb_dir (str): output directory
+    """
     # get content of mli.par and modify it
     mli_par = os.path.join(mli_dir, supermaster + '.rmli.par')
     with open(mli_par, 'r') as f:
@@ -171,6 +188,14 @@ def prep_sb_dir(mli_dir, diff_dir, supermaster, sb_dir):
 
 
 def prep_geo_dir(in_geo_dir, diff_dir, supermaster, out_geo_dir):
+    """Prepare geo directory
+
+    Args:
+        in_geo_dir (str): geo directory
+        diff_dir (str): diff directory
+        supermaster (str): master date
+        out_geo_dir (str): output directory
+    """
     # prep geo/*dem.rdc
     dem_rdc = os.path.join(in_geo_dir, supermaster + '.dem')
     dem_rdc_dst = os.path.join(out_geo_dir, supermaster + '.dem.rdc')
@@ -188,6 +213,13 @@ def prep_geo_dir(in_geo_dir, diff_dir, supermaster, out_geo_dir):
 
 
 def prep_dem_dir(in_geo_dir, supermaster, dem_dir):
+    """Prepare dem directory
+
+    Args:
+        in_geo_dir (str): geo directory
+        supermaster (str): master date
+        dem_dir (str): output directory
+    """
     # dem/*_seg.par
     seg_par = os.path.join(in_geo_dir, 'dem_seg.par')
     seg_par_dst = os.path.join(dem_dir, supermaster + '_seg.par')
@@ -195,11 +227,21 @@ def prep_dem_dir(in_geo_dir, supermaster, dem_dir):
 
 
 def is_dir(dir):
+    """Check if it is directory
+
+    Args:
+        dir (str): directory
+    """
     if not os.path.isdir(dir):
         sys.exit('{} does not exist.'.format(dir))
 
 
 def mk_dir(dir):
+    """Make directory
+
+    Args:
+        dir (str): directory
+    """
     if not os.path.isdir(dir):
         os.mkdir(dir)
 

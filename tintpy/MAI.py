@@ -52,6 +52,14 @@ def mk_tab(slc_dir, slc_tab, slc_extension):
 
 
 def mli_all(slc_tab, out_dir, rlks, alks):
+    """Calculate MLI images for a stack of SLCs
+
+    Args:
+        slc_tab (str): slc tab file including slc slc_par
+        out_dir (str): output directory
+        rlks (int): range looks
+        alks (int): azimuth looks
+    """
     os.chdir(out_dir)
     with open(slc_tab, 'r') as f:
         for line in f.readlines():
@@ -74,6 +82,18 @@ def mli_all(slc_tab, out_dir, rlks, alks):
 
 
 def base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir):
+    """Generate baseline output file with perpendicular baselines and delta_T values
+
+    Args:
+        slc_tab (str): slc tab file including slc and slc_par
+        slc_par (str): reference slc par
+        max_sb (float): max spatial baseline
+        max_tb (float): max time baseline
+        out_dir (str): output directory
+
+    Returns:
+        str: baseline file
+    """
     os.chdir(out_dir)
     bperp_file = os.path.join(out_dir, 'bperp_file')
     call_str = f'base_calc {slc_tab} {slc_par} {bperp_file} itab 1 1 0 {max_sb} 0 {max_tb}'
@@ -83,6 +103,14 @@ def base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir):
 
 
 def get_pairs(bperp_file):
+    """Get pairs from baseline file
+
+    Args:
+        bperp_file (str): baseline file
+
+    Returns:
+        list: pairs
+    """
     pairs = []
     with open(bperp_file, 'r', encoding='utf-8') as f:
         for line in f.readlines():
@@ -99,6 +127,18 @@ def get_pairs(bperp_file):
 
 
 def select_pairs_sbas(slc_tab, slc_par, max_sb, max_tb, out_dir):
+    """Select pairs using sbas method
+
+    Args:
+        slc_tab (str): slc tab file including slc and slc_par
+        slc_par (str): reference slc par
+        max_sb (float): max spatial baseline
+        max_tb (float): max time baseline
+        out_dir (str): output directory
+
+    Returns:
+        list: pairs
+    """
     bperp_file = base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir)
 
     pairs = get_pairs(bperp_file)
@@ -185,11 +225,22 @@ def make_rdc_dem(mli, mli_par, dem, dem_par, out_dir):
 
 
 def del_file(file):
+    """Delete file
+
+    Args:
+        file (str): file
+    """
     if os.path.isfile(file):
         os.remove(file)
 
 
 def comb_pic(pic_path, out_pic):
+    """Combine all pictures to one
+
+    Args:
+        pic_path (str): picture path
+        out_pic (str): output picture
+    """
     cmd_str = f"montage -label %f -geometry +5+7 -tile +6 -resize 300x300 {pic_path} {out_pic}"
     os.system(cmd_str)
 

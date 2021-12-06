@@ -35,6 +35,14 @@ def cmdline_parser():
 
 
 def calc_time_delta(pair):
+    """Calculate time delta
+
+    Args:
+        pair (str): date1-date2
+
+    Returns:
+        int: days
+    """
     dates = re.findall(r'\d{8}', pair)
     date1 = datetime.datetime.strptime(dates[0], '%Y%m%d')
     date2 = datetime.datetime.strptime(dates[1], '%Y%m%d')
@@ -60,6 +68,16 @@ def read_gamma_par(par_file, keyword):
 
 
 def read_gamma(file, lines, file_type):
+    """Read GAMMA format file
+
+    Args:
+        file (str): GAMMA format file
+        lines (int): line of file
+        file_type (str): file type
+
+    Returns:
+        array: data
+    """
     # check file
     if not os.path.isfile(file):
         sys.exit('{} does not exist.'.format(file))
@@ -72,6 +90,14 @@ def read_gamma(file, lines, file_type):
 
 
 def check_extension(extension):
+    """Check file extension
+
+    Args:
+        extension (str): extension
+
+    Returns:
+        str: extension
+    """
     if not extension.startswith('.'):
         extension = '.' + extension
 
@@ -79,6 +105,14 @@ def check_extension(extension):
 
 
 def get_pairs(diff_dir):
+    """Get all pairs
+
+    Args:
+        diff_dir (str): directory cluding pairs
+
+    Returns:
+        list: pairs
+    """
     pairs = [i[0:17] for i in os.listdir(diff_dir) if re.match(r'\d{8}_\d{8}', i)]
     pairs = sorted(list(set(pairs)))
 
@@ -86,6 +120,15 @@ def get_pairs(diff_dir):
 
 
 def get_diff_par(diff_dir, diff_par_extension):
+    """Get diff_par file
+
+    Args:
+        diff_dir (str): directory contains diff_par
+        diff_par_extension (str): diff_par file extension
+
+    Returns:
+        str: diff_par file path
+    """
     pairs = get_pairs(diff_dir)
     diff_par = None
 
@@ -98,6 +141,16 @@ def get_diff_par(diff_dir, diff_par_extension):
 
 
 def get_unw_cc(diff_dir, unw_extension, cc_extension):
+    """Get unw and cc file
+
+    Args:
+        diff_dir (str): directory contains unw and cc
+        unw_extension (str): unw extension
+        cc_extension (cc): cc extension
+
+    Returns:
+        tuple: unws and ccs
+    """
     pairs = get_pairs(diff_dir)
 
     unws = []
@@ -114,6 +167,15 @@ def get_unw_cc(diff_dir, unw_extension, cc_extension):
 
 
 def get_mean_coh(ccs, diff_par):
+    """Calculate mean coherence
+
+    Args:
+        ccs (list): cc files
+        diff_par (str): diff_par file
+
+    Returns:
+        array: mean coherence array
+    """
     mean_coh_array = np.zeros(len(ccs))
 
     length = int(read_gamma_par(diff_par, 'az_samp_1'))
@@ -128,6 +190,13 @@ def get_mean_coh(ccs, diff_par):
 
 
 def count_coh(start, end, coh_array):
+    """Count coherence rate in [start end]
+
+    Args:
+        start (float): start point
+        end (float): end point
+        coh_array (array): mean coherence array
+    """
     num = 0
     for i in coh_array:
         if i > start and i <= end:
@@ -137,6 +206,12 @@ def count_coh(start, end, coh_array):
 
 
 def statistic_coh(mean_coh_array, step=0.05):
+    """Statistic coherence
+
+    Args:
+        mean_coh_array (array): mean coherence array
+        step (float, optional): step. Defaults to 0.05.
+    """
     for i in np.arange(0, 1, step):
         start = round(i, 2)
         end = round(start + step, 2)
@@ -144,6 +219,14 @@ def statistic_coh(mean_coh_array, step=0.05):
 
 
 def write_diff_tab(unws, mean_coh_array, coh_thres, tab_file):
+    """Write diff_tab file
+
+    Args:
+        unws (list): unw files
+        mean_coh_array (array): mean coherence array
+        coh_thres (float): coherence threshold
+        tab_file (str): output tab file
+    """
     print('\nWriting data to {}'.format(tab_file))
     unw_used = 0
     with open(tab_file, 'w+') as f:

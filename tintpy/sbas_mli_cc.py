@@ -61,6 +61,15 @@ def read_gamma_par(par_file, keyword):
 
 
 def gen_lon_lat(dem_par, lookup, diff_par, supermaster, out_dir):
+    """Generate lon and lat file for StaMPS processing
+
+    Args:
+        dem_par (str): dem par file
+        lookup (str): lookup table
+        diff_par (str): diff_par file
+        supermaster (str): master date
+        out_dir (srt): output directory
+    """
     # width of interferogram
     width = read_gamma_par(diff_par, 'range_samp_1')
     # length of inerferogram
@@ -119,11 +128,25 @@ def gen_lon_lat(dem_par, lookup, diff_par, supermaster, out_dir):
 
 
 def mk_dir(dir):
+    """Make directory
+
+    Args:
+        dir (str): directory
+    """
     if not os.path.isdir(dir):
         os.mkdir(dir)
 
 
 def prep_files(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
+    """Prepare files for StaMPS processing
+
+    Args:
+        mli_dir (str): mli directory
+        diff_dir (str): diff directory
+        in_geo_dir (str): geo directory
+        supermaster (str): master date
+        output_dir (str): output directory
+    """
     # create directories
     insar_dir = os.path.join(output_dir, 'INSAR_' + supermaster)
     mk_dir(insar_dir)

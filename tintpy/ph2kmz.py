@@ -54,11 +54,26 @@ def read_gamma_par(par_file, keyword):
 
 
 def geocode(infile, lookup_file, outfile, width_rdr, width_geo, lines_geo):
+    """Geocoding of image data using lookup table values
+
+    Args:
+        infile (str): file
+        lookup_file (str): lookup table
+        outfile (str): geocoded file
+        width_rdr (int): rdr width
+        width_geo (int): geo width
+        lines_geo (int): geo length
+    """
     call_str = f"geocode_back {infile} {width_rdr} {lookup_file} {outfile} {width_geo} {lines_geo} 1 0"
     os.system(call_str)
 
 
 def check_file(file):
+    """Check if the file exists 
+
+    Args:
+        file (str): file
+    """
     if not os.path.isfile(file):
         sys.exit("{} does not exist.".format(file))
 

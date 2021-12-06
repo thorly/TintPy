@@ -32,6 +32,15 @@ def cmdline_parser():
 
 
 def get_slc_dir_names(data_dir, flag):
+    """Get ALOS data names
+
+    Args:
+        data_dir (str): directory including ALOS data
+        flag (int): 1 for ALOS PALSAR, 2 for ALOS PALSAR2
+
+    Returns:
+        list: ALOS data names
+    """
     names = []
     files = os.listdir(data_dir)
     # ALOS PALSAR
@@ -50,7 +59,14 @@ def get_slc_dir_names(data_dir, flag):
 
 
 def get_date(summary_file):
-    """get date for ALOS PALSAR"""
+    """Get date from summary file
+
+    Args:
+        summary_file (str): summary file
+
+    Returns:
+        str: date
+    """
     date = None
     with open(summary_file, 'r') as f:
         for line in f.readlines():
@@ -94,6 +110,15 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
 
 
 def reformat_alos(data_dir, output_dir, flag, rlks, alks):
+    """Generate SLC data and ISP parameter file
+
+    Args:
+        data_dir (str): ALOS data directory
+        output_dir (str): output directory
+        flag (int): 1 for ALOS PALSAR, 2 for ALOS PALSAR2
+        rlks (int): range looks
+        alks (int): azimuth looks
+    """
     slc_dir_names = get_slc_dir_names(data_dir, flag)
     # reformat ALOS data
     if slc_dir_names:

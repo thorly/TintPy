@@ -29,8 +29,7 @@ queryfmt2 = "%Y/%m/%d/"
 credentials = ('gnssguest', 'gnssguest')
 
 EXAMPLE = """Example:
-  python3 fetchOrbit.py /ly/zips
-  python3 fetchOrbit.py /ly/sentinel.txt -o /ly/orbits
+  python3 fetchOrbit.py /ly/sentinel.txt /ly/orbits
 """
 
 
@@ -47,12 +46,10 @@ def cmdLineParse():
         'input',
         type=str,
         help='Path of text or directory for getting images names')
-    parser.add_argument('-o',
-                        '--output',
-                        dest='outdir',
+    parser.add_argument('outdir',
                         type=str,
                         default='.',
-                        help='Path to output directory (defaults: current directory)')
+                        help='Path to output directory')
 
     return parser.parse_args()
 

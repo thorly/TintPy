@@ -33,6 +33,14 @@ def cmdline_parser():
 
 
 def get_dates(days):
+    """Get date using days
+
+    Args:
+        days (list): days
+
+    Returns:
+        list: date
+    """
     dates = []
     for day in days:
         date = datetime.datetime.fromordinal(int(day)) + datetime.timedelta(
@@ -44,6 +52,14 @@ def get_dates(days):
 
 
 def save_vel_ts(ts_mat, vel_mat, out_ts_file, out_vel_file):
+    """Read vel and ts mat and save them
+
+    Args:
+        ts_mat (str): ts file
+        vel_mat (str): vel file
+        out_ts_file (str): output ts file
+        out_vel_file (str): output vel file
+    """
     # load mat
     data_ts = scio.loadmat(ts_mat)
     data_vel = scio.loadmat(vel_mat)

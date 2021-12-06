@@ -56,6 +56,7 @@ def mk_tab(slc_dir, slc_tab, slc_extension):
     Args:
         slc_dir (str): slc directory
         slc_tab (str): tab file
+        slc_extension (str): slc extension
     """
     dates = sorted(
         [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
@@ -67,6 +68,18 @@ def mk_tab(slc_dir, slc_tab, slc_extension):
 
 
 def base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir):
+    """Generate baseline output file with perpendicular baselines and delta_T values
+
+    Args:
+        slc_tab (str): slc tab file including slc and slc_par
+        slc_par (str): reference slc par
+        max_sb (float): max spatial baseline
+        max_tb (float): max time baseline
+        out_dir (str): output directory
+
+    Returns:
+        str: baseline file
+    """
     os.chdir(out_dir)
     bperp_file = os.path.join(out_dir, 'bperp_file')
     call_str = f'base_calc {slc_tab} {slc_par} {bperp_file} itab 1 1 0 {max_sb} 0 {max_tb}'
@@ -76,6 +89,14 @@ def base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir):
 
 
 def get_pairs(bperp_file):
+    """Get pairs from baseline file
+
+    Args:
+        bperp_file (str): baseline file
+
+    Returns:
+        list: pairs
+    """
     pairs = []
     with open(bperp_file, 'r', encoding='utf-8') as f:
         for line in f.readlines():
@@ -92,6 +113,18 @@ def get_pairs(bperp_file):
 
 
 def select_pairs_sbas(slc_tab, slc_par, max_sb, max_tb, out_dir):
+    """Select pairs using sbas method
+
+    Args:
+        slc_tab (str): slc tab file including slc and slc_par
+        slc_par (str): reference slc par
+        max_sb (float): max spatial baseline
+        max_tb (float): max time baseline
+        out_dir (str): output directory
+
+    Returns:
+        list: pairs
+    """
     bperp_file = base_calc(slc_tab, slc_par, max_sb, max_tb, out_dir)
 
     pairs = get_pairs(bperp_file)
@@ -100,6 +133,15 @@ def select_pairs_sbas(slc_tab, slc_par, max_sb, max_tb, out_dir):
 
 
 def select_pairs_sequential(dates, con_num):
+    """Select pairs using sequential method
+
+    Args:
+        dates (list): slc dates
+        con_num (int): connection number
+
+    Returns:
+        list: pairs
+    """
     pairs = []
     length = len(dates)
     for i in range(length):
@@ -130,6 +172,14 @@ def read_gamma_par(par_file, keyword):
 
 
 def read_dem_par(dem_seg_par):
+    """Extract value from dem_seg_par file
+
+    Args:
+        dem_seg_par (str): dem_seg.par file
+
+    Returns:
+        list: values
+    """
     par_key = [
         'width', 'nlines', 'corner_lat', 'corner_lon', 'post_lat', 'post_lon'
     ]
@@ -175,6 +225,13 @@ def read_gdal_file(file, band=1):
 
 
 def write_gamma(data, out_file, file_type):
+    """Write GAMMA format file
+
+    Args:
+        data (array): array
+        out_file (str): output file name
+        file_type (str): file type
+    """
     data = data.astype(file_type)
     data.byteswap('True')
     data.reshape(-1, 1)
@@ -182,6 +239,16 @@ def write_gamma(data, out_file, file_type):
 
 
 def read_gamma(file, lines, file_type):
+    """Read GAMMA format file
+
+    Args:
+        file (str): GAMMA format file
+        lines (int): line of file
+        file_type (str): file type
+
+    Returns:
+        array: data
+    """
     # check file
     if not os.path.isfile(file):
         sys.exit('{} does not exist.'.format(file))
@@ -194,6 +261,15 @@ def read_gamma(file, lines, file_type):
 
 
 def interp_gacos(gacos_file, dem_seg_par, wavelength, incidence, out_file):
+    """Read gacos file, interpolate it and save it
+
+    Args:
+        gacos_file (str): gacos file
+        dem_seg_par (str): dem_seg.par file
+        wavelength (float): wave length
+        incidence (float): incidence angle
+        out_file (str): output file
+    """
     values = read_dem_par(dem_seg_par)
     width, length = values[0], values[1]
     upper_left_lon, upper_left_lat = values[3], values[2]
@@ -225,11 +301,30 @@ def interp_gacos(gacos_file, dem_seg_par, wavelength, incidence, out_file):
 
 
 def geocode(file, width_geo, lookup_table, width, length, out_file):
+    """Forward geocoding transformation using a lookup table
+
+    Args:
+        file (str): file
+        width_geo (int): geo width
+        lookup_table (str): lookup table
+        width (int): rdr width
+        length (int): rdr length
+        out_file (str): output file
+    """
     call_str = f"geocode {lookup_table} {file} {width_geo} {out_file} {width} {length} 1 0"
     os.system(call_str)
 
 
 def sub_gacos_from_int(int_file, length, m_gacos_file, s_gacos_file, int_correct_file):
+    """Subtract gacos phase from interferogram file
+
+    Args:
+        int_file (str): int file
+        length (int): rdr length
+        m_gacos_file (str): gacos file1
+        s_gacos_file (str): gacos file2
+        int_correct_file (str): output int file
+    """
     m_gacos = read_gamma(m_gacos_file, length, 'float32')
     s_gacos = read_gamma(s_gacos_file, length, 'float32')
     diff_gacos = m_gacos - s_gacos
@@ -241,6 +336,14 @@ def sub_gacos_from_int(int_file, length, m_gacos_file, s_gacos_file, int_correct
 
 
 def mli_all(slc_tab, out_dir, rlks, alks):
+    """Calculate MLI images for a stack of SLCs
+
+    Args:
+        slc_tab (str): slc tab file including slc slc_par
+        out_dir (str): output directory
+        rlks (int): range looks
+        alks (int): azimuth looks
+    """
     os.chdir(out_dir)
     with open(slc_tab, 'r') as f:
         for line in f.readlines():
@@ -325,11 +428,24 @@ def make_rdc_dem(mli, mli_par, dem, dem_par, out_dir):
 
 
 def del_file(file):
+    """Delete file
+
+    Args:
+        file (str): file
+    """
     if os.path.isfile(file):
         os.remove(file)
 
 
 def calc_time_delta(pair):
+    """Calculate time delta
+
+    Args:
+        pair (str): date1-date2
+
+    Returns:
+        int: days
+    """
     dates = re.findall(r'\d{8}', pair)
     date1 = datetime.datetime.strptime(dates[0], '%Y%m%d')
     date2 = datetime.datetime.strptime(dates[1], '%Y%m%d')
@@ -339,6 +455,12 @@ def calc_time_delta(pair):
 
 
 def comb_pic(pic_path, out_pic):
+    """Combine all pictures to one
+
+    Args:
+        pic_path (str): picture path
+        out_pic (str): output picture
+    """
     cmd_str = f"montage -label %f -geometry +5+7 -tile +6 -resize 300x300 {pic_path} {out_pic}"
     os.system(cmd_str)
 
