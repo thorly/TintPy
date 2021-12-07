@@ -334,7 +334,7 @@ def main():
             write_tab([s_iw_rslc1, s_iw_rslc2], rslc_tab)
 
         if len(sub_swath) == 3:
-            i1, i2, i3 = sub_swath[0], sub_swath[1], sub_swath
+            i1, i2, i3 = sub_swath[0], sub_swath[1], sub_swath[2]
 
             s_iw_slc1 = os.path.join(s_slc_dir, f"{s_date}.iw{i1}.{pol}.slc")
             s_iw_slc2 = os.path.join(s_slc_dir, f"{s_date}.iw{i2}.{pol}.slc")
