@@ -238,6 +238,55 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
         os.system(call_str)
 
 
+def merge_number_tables(burst_number_tables, out_file):
+    flag = 0
+    for file in burst_number_tables:
+        if os.path.isfile(file):
+            flag += 1
+
+    if flag == len(burst_number_tables):
+        num1 = []
+        time1 = []
+        num2 = []
+        time2 = []
+        num3 = []
+        time3 = []
+
+        for file in burst_number_tables:
+            with open(file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                for line in lines:
+                    if 'iw1_number_of_bursts' in line:
+                        num1.append(int(line.strip().split()[1]))
+                    if 'iw1_first_burst' in line or 'iw1_last_burst' in line:
+                        time1.append(float(line.strip().split()[1]))
+                    if 'iw2_number_of_bursts' in line:
+                        num2.append(int(line.strip().split()[1]))
+                    if 'iw2_first_burst' in line or 'iw2_last_burst' in line:
+                        time2.append(float(line.strip().split()[1]))
+                    if 'iw3_number_of_bursts' in line:
+                        num3.append(int(line.strip().split()[1]))
+                    if 'iw3_first_burst' in line or 'iw3_last_burst' in line:
+                        time3.append(float(line.strip().split()[1]))
+
+        with open(out_file, 'w+', encoding='utf-8') as f:
+            if num1 and time1:
+                time1 = sorted(time1)
+                f.write(f"iw1_number_of_bursts: {sum(num1)}\n")
+                f.write(f"iw1_first_burst:      {time1[0]}\n")
+                f.write(f"iw1_last_burst:       {time1[-1]}\n")
+            if num2 and time2:
+                time2 = sorted(time2)
+                f.write(f"iw2_number_of_bursts: {sum(num2)}\n")
+                f.write(f"iw2_first_burst:      {time2[0]}\n")
+                f.write(f"iw2_last_burst:       {time2[-1]}\n")
+            if num3 and time3:
+                time3 = sorted(time3)
+                f.write(f"iw3_number_of_bursts: {sum(num3)}\n")
+                f.write(f"iw3_first_burst:      {time3[0]}\n")
+                f.write(f"iw3_last_burst:       {time3[-1]}\n")
+
+
 def cat_two_slc(date_slc_dirs, sub_swath, pol, rlks, alks, out_dir):
     """Concatenate two SLCs
 
@@ -300,6 +349,11 @@ def cat_two_slc(date_slc_dirs, sub_swath, pol, rlks, alks, out_dir):
 
             bmp = slc_out + '.bmp'
             slc2bmp(slc_out, slc_par_out, rlks, alks, bmp)
+
+            number_table1 = os.path.join(date_slc_dirs[0], f'{date}.burst_number_table')
+            number_table2 = os.path.join(date_slc_dirs[1], f'{date}.burst_number_table')
+            out_file = os.path.join(out_dir, f'{date}.burst_number_table')
+            merge_number_tables([number_table1, number_table2], out_file)
 
             os.remove(slc_tab_in1)
             os.remove(slc_tab_in2)
