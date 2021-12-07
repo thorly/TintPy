@@ -260,6 +260,7 @@ def main():
     m_rslc = os.path.join(m_rslc_dir, m_date + '.rslc')
     m_rslc_par = m_rslc + '.par'
 
+    print('Copy reference slc to {}'.format(m_rslc_dir))
     copy_file(m_slc, m_rslc)
     copy_file(m_slc_par, m_rslc_par)
 
@@ -329,7 +330,7 @@ def main():
             rslc_tab = os.path.join(s_rslc_dir, 'rslc_tab')
 
             write_tab([s_iw_slc1, s_iw_slc2], slc_tab_s)
-            write_tab([m_iw_slc2, m_iw_slc2], slc_tab_m)
+            write_tab([m_iw_slc1, m_iw_slc2], slc_tab_m)
             write_tab([s_iw_rslc1, s_iw_rslc2], rslc_tab)
 
         if len(sub_swath) == 3:
@@ -352,7 +353,7 @@ def main():
             rslc_tab = os.path.join(s_rslc_dir, 'rslc_tab')
 
             write_tab([s_iw_slc1, s_iw_slc2, s_iw_slc3], slc_tab_s)
-            write_tab([m_iw_slc2, m_iw_slc2, m_iw_slc3], slc_tab_m)
+            write_tab([m_iw_slc1, m_iw_slc2, m_iw_slc3], slc_tab_m)
             write_tab([s_iw_rslc1, s_iw_rslc2, s_iw_rslc3], rslc_tab)
 
         os.chdir(s_rslc_dir)
