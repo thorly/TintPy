@@ -19,7 +19,7 @@ import datetime
 EXAMPLE = """Example:
   python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -s 200 -t 60
   python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -m sequential -n 4
-  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -s 200 -t 60 -g /ly/gacos -l 0.05546576
+  python3 rslc2ifg.py /ly/rslc /ly/stacking /ly/dem 20211229 20 5 -s 200 -t 60 -g /ly/gacos -w 0.05546576
 """
 
 
@@ -44,7 +44,10 @@ def cmdline_parser():
         help='Number of the neibour-connected SAR images at one side for sequential method (defaults: 4)')
     parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
     parser.add_argument('-g', dest='gacos_dir', help='directory contains GACOS files (tif) for aps correction')
-    parser.add_argument('-l', dest='wavelength', type=float, help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
+    parser.add_argument('-w', dest='wavelength', type=float, help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
+    parser.add_argument('-r', dest='roff', help='offset to starting range of section to unwrap (defaults: 0)', type=float, default=0)
+    parser.add_argument('-l', dest='loff', help='offset to starting line of section to unwrap (defaults: 0)', type=float, default=0)
+    parser.add_argument('-c', dest='cc_thres', type=float, default=0, help='threshold for correlation for creating the unwrapping mask (0.0 --> 1.0) (defaults: 0)')
 
     inps = parser.parse_args()
     return inps
@@ -481,6 +484,9 @@ def main():
     slc_extension = inps.slc_extension
     gacos_dir = os.path.abspath(inps.gacos_dir)
     wavelength = inps.wavelength
+    roff = inps.roff
+    loff = inps.loff
+    cc_thres = inps.cc_thres
 
     # check rslc_dir
     if not os.path.isdir(rslc_dir):
@@ -651,10 +657,10 @@ def main():
         call_str = f"rascc {pair}.adf.cc {sm_mli} {width_mli} 1 1 0 1 1 0.1 0.9 0.7 0.35"
         os.system(call_str)
 
-        call_str = f"rascc_mask {pair}.adf.cc {sm_mli} {width_mli} 1 1 0 1 1 0 0 0.1 0.9 1.0 0.35 1 {pair}.adf.cc_mask.bmp"
+        call_str = f"rascc_mask {pair}.adf.cc {sm_mli} {width_mli} 1 1 0 1 1 {cc_thres} 0 0.1 0.9 1.0 0.35 1 {pair}.adf.cc_mask.bmp"
         os.system(call_str)
 
-        call_str = f"mcf {pair}.adf.diff {pair}.adf.cc {pair}.adf.cc_mask.bmp {pair}.adf.unw {width_mli} 1 0 0 - - 1 1 - - - 0"
+        call_str = f"mcf {pair}.adf.diff {pair}.adf.cc {pair}.adf.cc_mask.bmp {pair}.adf.unw {width_mli} 1 {roff} {loff} - - 1 1 - - - 0"
         os.system(call_str)
 
         call_str = f"rasrmg {pair}.adf.unw {sm_mli} {width_mli} 1 1 0 1 1 .5 1. .35 0.0 1"
@@ -687,10 +693,10 @@ def main():
             call_str = f"rascc {pair}.adf.cc.gacos {sm_mli} {width_mli} 1 1 0 1 1 0.1 0.9 0.7 0.35"
             os.system(call_str)
 
-            call_str = f"rascc_mask {pair}.adf.cc.gacos {sm_mli} {width_mli} 1 1 0 1 1 0 0 0.1 0.9 1.0 0.35 1 {pair}.adf.cc_mask.gacos.bmp"
+            call_str = f"rascc_mask {pair}.adf.cc.gacos {sm_mli} {width_mli} 1 1 0 1 1 {cc_thres} 0 0.1 0.9 1.0 0.35 1 {pair}.adf.cc_mask.gacos.bmp"
             os.system(call_str)
 
-            call_str = f"mcf {pair}.adf.diff.gacos {pair}.adf.cc.gacos {pair}.adf.cc_mask.gacos.bmp {pair}.adf.unw.gacos {width_mli} 1 0 0 - - 1 1 - - - 0"
+            call_str = f"mcf {pair}.adf.diff.gacos {pair}.adf.cc.gacos {pair}.adf.cc_mask.gacos.bmp {pair}.adf.unw.gacos {width_mli} 1 {roff} {loff} - - 1 1 - - - 0"
             os.system(call_str)
 
             call_str = f"rasrmg {pair}.adf.unw.gacos {sm_mli} {width_mli} 1 1 0 1 1 .5 1. .35 0.0 1"
