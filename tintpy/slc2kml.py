@@ -65,6 +65,9 @@ def main():
         extension = '.' + extension
 
     # check slc_dir
+    if not os.path.isdir(slc_dir):
+        sys.exit(f"{slc_dir} does not exist.")
+
     slcs = glob.glob(slc_dir + '/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' + extension)
     slc_pars = [i + '.par' for i in slcs]
     for i, j in zip(slcs, slc_pars):
