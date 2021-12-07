@@ -45,8 +45,8 @@ def cmdline_parser():
     parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
     parser.add_argument('-g', dest='gacos_dir', help='directory contains GACOS files (tif) for aps correction')
     parser.add_argument('-w', dest='wavelength', type=float, help='Microwave length (Sentinel-1: 0.05546576, ALOS: 0.23830879)')
-    parser.add_argument('-r', dest='roff', help='offset to starting range of section to unwrap (defaults: 0)', type=float, default=0)
-    parser.add_argument('-l', dest='loff', help='offset to starting line of section to unwrap (defaults: 0)', type=float, default=0)
+    parser.add_argument('-r', dest='roff', help='phase reference range offset to unwrap (defaults: 0)', type=float, default=0)
+    parser.add_argument('-l', dest='loff', help='phase reference azimuth offset to unwrap (defaults: 0)', type=float, default=0)
     parser.add_argument('-c', dest='cc_thres', type=float, default=0, help='threshold for correlation for creating the unwrapping mask (0.0 --> 1.0) (defaults: 0)')
 
     inps = parser.parse_args()
@@ -482,7 +482,7 @@ def main():
     method = inps.method
     con_num = inps.con_num
     slc_extension = inps.slc_extension
-    gacos_dir = os.path.abspath(inps.gacos_dir)
+    gacos_dir = inps.gacos_dir
     wavelength = inps.wavelength
     roff = inps.roff
     loff = inps.loff
@@ -528,6 +528,7 @@ def main():
 
     # check gacos
     if gacos_dir and wavelength:
+        gacos_dir = os.path.abspath(gacos_dir)
         not_exist = []
         if not os.path.isdir(gacos_dir):
             sys.exit('{} does not exist'.format(gacos_dir))
@@ -585,11 +586,11 @@ def main():
     width_geo = read_gamma_par(dem_seg_par, 'width')
     width_geo = int(width_geo)
 
-    incidence = read_gamma_par(sm_mli_par, 'incidence_angle')
-    incidence = np.deg2rad(float(incidence))
-
     # process gacos
     if gacos_dir and wavelength:
+        incidence = read_gamma_par(sm_mli_par, 'incidence_angle')
+        incidence = np.deg2rad(float(incidence))
+
         os.chdir(gacos_dir)
         for date in dates:
             gacos_file = date + '.ztd.tif'
@@ -660,7 +661,7 @@ def main():
         call_str = f"rascc_mask {pair}.adf.cc {sm_mli} {width_mli} 1 1 0 1 1 {cc_thres} 0 0.1 0.9 1.0 0.35 1 {pair}.adf.cc_mask.bmp"
         os.system(call_str)
 
-        call_str = f"mcf {pair}.adf.diff {pair}.adf.cc {pair}.adf.cc_mask.bmp {pair}.adf.unw {width_mli} 1 {roff} {loff} - - 1 1 - - - 0"
+        call_str = f"mcf {pair}.adf.diff {pair}.adf.cc {pair}.adf.cc_mask.bmp {pair}.adf.unw {width_mli} 1 0 0 - - 1 1 - {roff} {loff} 0"
         os.system(call_str)
 
         call_str = f"rasrmg {pair}.adf.unw {sm_mli} {width_mli} 1 1 0 1 1 .5 1. .35 0.0 1"
@@ -696,7 +697,7 @@ def main():
             call_str = f"rascc_mask {pair}.adf.cc.gacos {sm_mli} {width_mli} 1 1 0 1 1 {cc_thres} 0 0.1 0.9 1.0 0.35 1 {pair}.adf.cc_mask.gacos.bmp"
             os.system(call_str)
 
-            call_str = f"mcf {pair}.adf.diff.gacos {pair}.adf.cc.gacos {pair}.adf.cc_mask.gacos.bmp {pair}.adf.unw.gacos {width_mli} 1 {roff} {loff} - - 1 1 - - - 0"
+            call_str = f"mcf {pair}.adf.diff.gacos {pair}.adf.cc.gacos {pair}.adf.cc_mask.gacos.bmp {pair}.adf.unw.gacos {width_mli} 1 0 0 - - 1 1 - {roff} {loff} 0"
             os.system(call_str)
 
             call_str = f"rasrmg {pair}.adf.unw.gacos {sm_mli} {width_mli} 1 1 0 1 1 .5 1. .35 0.0 1"

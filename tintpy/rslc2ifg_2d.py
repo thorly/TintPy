@@ -37,8 +37,8 @@ def cmd_line_parser():
     parser.add_argument('step', help='step number', type=int, choices=[1, 2, 3])
     parser.add_argument('-s', dest='max_sb', help='maximum spatial baseline', type=float)
     parser.add_argument('-t', dest='max_tb', help='maximum temporal baseline', type=float)
-    parser.add_argument('-r', dest='roff', help='offset to starting range of section to unwrap', type=float)
-    parser.add_argument('-l', dest='loff', help='offset to starting line of section to unwrap', type=float)
+    parser.add_argument('-r', dest='roff', help='phase reference range offset to unwrap', type=float)
+    parser.add_argument('-l', dest='loff', help='phase reference azimuth offset to unwrap', type=float)
     parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
     parser.add_argument('-c', dest='cc_thres', type=float, default=0, help='threshold for correlation for creating the unwrapping mask (0.0 --> 1.0) (defaults: 0)')
 
