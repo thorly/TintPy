@@ -40,6 +40,8 @@ def cmd_line_parser():
     parser.add_argument('-r', dest='roff', help='offset to starting range of section to unwrap', type=float)
     parser.add_argument('-l', dest='loff', help='offset to starting line of section to unwrap', type=float)
     parser.add_argument('-e', dest='slc_extension', type=str, default='.rslc', help='file extension for RSLCs (defaults: .rslc)')
+    parser.add_argument('-c', dest='cc_thres', type=float, default=0, help='threshold for correlation for creating the unwrapping mask (0.0 --> 1.0) (defaults: 0)')
+
     inps = parser.parse_args()
 
     return inps
@@ -195,6 +197,7 @@ def main():
     loff = inps.loff
     step = inps.step
     extension = inps.slc_extension
+    cc_thres = inps.cc_thres
 
     # check rslc_dir
     if not os.path.isdir(rslc_dir):
@@ -301,7 +304,7 @@ def main():
             os.chdir(base_dir)
 
             # mk_unw_2d
-            cmd_str = f"mk_unw_2d {rslc_tab} itab {m_rmli} {diff1_dir} 0 0 3 1 1 1 {roff} {loff} 1"
+            cmd_str = f"mk_unw_2d {rslc_tab} itab {m_rmli} {diff1_dir} {cc_thres} 0 3 1 1 1 {roff} {loff} 1"
             os.system(cmd_str)
 
             # com_pic
@@ -338,7 +341,7 @@ def main():
             os.system(cmd_str)
 
             # mk_unw_2d
-            cmd_str = f"mk_unw_2d {rslc_tab} itab {m_rmli} {diff2_dir} 0 0 3 1 1 1 {roff} {loff} 1 - 0 0 - - -d diff_tab"
+            cmd_str = f"mk_unw_2d {rslc_tab} itab {m_rmli} {diff2_dir} {cc_thres} 0 3 1 1 1 {roff} {loff} 1 - 0 0 - - -d diff_tab"
             os.system(cmd_str)
 
             # com_pic
