@@ -67,6 +67,12 @@ def write_tab(slc, slc_par, tops_par, tab_file):
 
 
 def merge_tab(tab_files, out_tab):
+    """Merge multi tabs to one
+
+    Args:
+        tab_files (list): tab files
+        out_tab (str): out tab
+    """
     with open(out_tab, 'w+', encoding='utf-8') as f_out:
         for file in tab_files:
             with open(file, 'r', encoding='utf-8') as f_in:
@@ -114,10 +120,10 @@ def slc_copy(date_slc_dir, sub_swath, pol, start_burst, end_burst, rlks, alks, o
     slc_par_out = slc_out + '.par'
     tops_par_out = slc_out + '.tops_par'
 
-    slc_tab_in = os.path.join(out_dir, 'slc1_tab')
+    slc_tab_in = os.path.join(out_dir, f'{date}.iw{sub_swath}.{pol}.slc_tab_in')
     write_tab(slc, slc_par, tops_par, slc_tab_in)
 
-    slc_tab_out = os.path.join(out_dir, 'slc2_tab')
+    slc_tab_out = os.path.join(out_dir, f'{date}.iw{sub_swath}.{pol}.slc_tab_out')
     write_tab(slc_out, slc_par_out, tops_par_out, slc_tab_out)
 
     call_str = f"SLC_copy_S1_TOPS {slc_tab_in} {slc_tab_out} 1 {start_burst} 1 {end_burst}"
@@ -189,7 +195,9 @@ def copy_mosaic_two(date_slc_dir, sub_swath, pol, bursts, rlks, alks, out_dir):
     slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3], rlks, alks, out_dir)
 
     slc_tab = os.path.join(out_dir, 'slc_tab')
-    write_tab([slc_tab1, slc_tab2], slc_tab)
+    merge_tab([slc_tab1, slc_tab2], slc_tab)
+    os.remove(slc_tab1)
+    os.remove(slc_tab2)
 
     slc_mosaic(slc_tab, rlks, alks, out_dir)
 
@@ -212,7 +220,10 @@ def copy_mosaic_three(date_slc_dir, sub_swath, pol, bursts, rlks, alks,
     slc_tab3 = slc_copy(date_slc_dir, sub_swath[2], pol, bursts[4], bursts[5], rlks, alks, out_dir)
 
     slc_tab = os.path.join(out_dir, 'slc_tab')
-    write_tab([slc_tab1, slc_tab2, slc_tab3], slc_tab)
+    merge_tab([slc_tab1, slc_tab2, slc_tab3], slc_tab)
+    os.remove(slc_tab1)
+    os.remove(slc_tab2)
+    os.remove(slc_tab3)
 
     slc_mosaic(slc_tab, rlks, alks, out_dir)
 
@@ -266,9 +277,10 @@ def main():
             if len(sub_swath) == 1:
                 exec_func = copy_mosaic_one
             elif len(sub_swath) == 2:
-                exec_func = copy_mosaic_one
+                exec_func = copy_mosaic_two
             else:
-                exec_func = copy_mosaic_one
+                exec_func = copy_mosaic_three
+
             exec_func(date_slc_dir, sub_swath, pol, burst_num, rlks, alks,out_date_slc_dir)
 
         print('\nAll done, enjoy it!\n')
