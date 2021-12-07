@@ -191,6 +191,40 @@ def lookup_from_list(str_list, pol, sub_swath):
     return res
 
 
+def gen_number_table(tops_par_files, out_file):
+    """Generate number table for each iw
+
+    Args:
+        tops_par_files (list): tops par files
+        out_file (str): output file
+    """
+    num = None
+    time = []
+
+    f_out = open(out_file, 'w+', encoding='utf-8')
+
+    for tops_par_file in tops_par_files:
+        name = os.path.basename(tops_par_file)
+        iw = name.split('.')[1]
+
+        with open(tops_par_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            for line in lines:
+                if 'number_of_bursts' in line:
+                    num = line.strip().split()[1]
+                if 'burst_asc_node_' in line:
+                    time.append(line.strip().split()[1])
+
+        if num and time:
+            f_out.write(f"{iw}_number_of_bursts: {num}\n")
+            f_out.write(f"{iw}_first_burst:      {time[0]}\n")
+            f_out.write(f"{iw}_last_burst:       {time[-1]}\n")
+        num = None
+        time = []
+
+    f_out.close()
+
+
 def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
     """Generate S1 TOPS SLC from zip file
 
@@ -206,6 +240,7 @@ def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
     calibration_xmls = []
     noise_xmls = []
     all_files = []
+    print("unzip necessary files")
     with zipfile.ZipFile(zip_file, mode='r') as f:
         files = f.namelist()
         for file in files:
@@ -251,6 +286,10 @@ def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
             else:
                 cmd_str = f'par_S1_SLC {geo_tiff} {annotation_xml} {calibration_xml} {slc_par} {slc} {tops_par}'
             os.system(cmd_str)
+
+    tops_pars = glob.glob(os.path.join(out_slc_dir, f'*{pol[0]}.slc.tops_par'))
+    out_file = os.path.join(out_slc_dir, f'{date}.burst_number_table')
+    gen_number_table(tops_pars, out_file)
     # delete files
     shutil.rmtree(glob.glob(os.path.join(out_slc_dir, 'S1*SAFE'))[0])
 
