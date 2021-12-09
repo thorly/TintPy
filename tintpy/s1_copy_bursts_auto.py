@@ -11,12 +11,12 @@ import re
 import sys
 
 EXAMPLE = '''Example:
-  python3 s1_copy_mosaic_auto.py slc slc_extract ref.number_table -r 32 -a 8 -p vv -n 1
+  python3 s1_copy_bursts_auto.py slc slc_extract ref.number_table -r 32 -a 8 -p vv -n 1
 '''
 
 
 def cmdLineParse():
-    parser = argparse.ArgumentParser(description= 'Copy required bursts and mosaic them automatically for Sentinel-1 TOPS SLC.',
+    parser = argparse.ArgumentParser(description= 'Copy multiple bursts automatically from Sentinel-1 TOPS mode SLC..',
         formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='slc directory')
@@ -61,19 +61,6 @@ def write_tab(slc, slc_par, tops_par, tab_file):
         f.write(f'{slc} {slc_par} {tops_par}\n')
 
 
-def merge_tab(tab_files, out_tab):
-    """Merge multi tabs to one
-
-    Args:
-        tab_files (list): tab files
-        out_tab (str): out tab
-    """
-    with open(out_tab, 'w+', encoding='utf-8') as f_out:
-        for file in tab_files:
-            with open(file, 'r', encoding='utf-8') as f_in:
-                f_out.write(f_in.readline().strip() + '\n')
-
-
 def slc2bmp(slc, slc_par, rlks, alks, bmp):
     """Generate 8-bit raster graphics image of intensity of complex (SLC) data
 
@@ -104,12 +91,14 @@ def slc_copy(date_slc_dir, sub_swath, pol, start_burst, end_burst, rlks, alks, o
         out_dir (str): output slc directory
 
     Returns:
-        str: slc_tab_out
+        tuple: slc and par
     """
     date = os.path.basename(date_slc_dir)
+
     slc = os.path.join(date_slc_dir, f'{date}.iw{sub_swath}.{pol}.slc')
     slc_par = slc + '.par'
     tops_par = slc + '.tops_par'
+
     # output files
     slc_out = os.path.join(out_dir, os.path.basename(slc))
     slc_par_out = slc_out + '.par'
@@ -125,102 +114,9 @@ def slc_copy(date_slc_dir, sub_swath, pol, start_burst, end_burst, rlks, alks, o
     os.system(call_str)
 
     os.remove(slc_tab_in)
+    os.remove(slc_tab_out)
 
-    bmp = slc_out + '.bmp'
-    slc2bmp(slc_out, slc_par_out, rlks, alks, bmp)
-
-    return slc_tab_out
-
-
-def slc_mosaic(slc_tab, rlks, alks, out_dir):
-    """Calculate SLC mosaic of Sentinel-1 TOPS burst SLC data
-
-    Args:
-        slc_tab (str): slc tab file
-        rlks (int): range looks
-        alks (int): azimuth looks
-        out_dir (str): output directory
-    """
-    # get date
-    with open(slc_tab, 'r') as f:
-        tmp = f.readline().strip().split()[0]
-        date = os.path.basename(tmp)[0:8]
-
-    slc_out = os.path.join(out_dir, date + '.slc')
-    slc_par_out = os.path.join(out_dir, date + '.slc.par')
-
-    call_str = f"SLC_mosaic_S1_TOPS {slc_tab} {slc_out} {slc_par_out} {rlks} {alks}"
-    os.system(call_str)
-
-    os.remove(slc_tab)
-
-    bmp = slc_out + '.bmp'
-    slc2bmp(slc_out, slc_par_out, rlks, alks, bmp)
-
-
-def copy_mosaic_one(date_slc_dir, sub_swath, pol, bursts, rlks, alks, out_dir):
-    """Copy and mosaic one sub_swath S1 TOPS SLC
-
-    Args:
-        date_slc_dir (str): slc directory
-        sub_swath (int list): sub_swath number
-        pol (str): polarization
-        bursts (int list): burst number
-        rlks (int): range looks
-        alks (int): azimuth looks
-        out_dir (str): output directory
-    """
-    slc_tab = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1], rlks, alks, out_dir)
-    slc_mosaic(slc_tab, rlks, alks, out_dir)
-
-
-def copy_mosaic_two(date_slc_dir, sub_swath, pol, bursts, rlks, alks, out_dir):
-    """Copy and mosaic two sub_swaths S1 TOPS SLC
-
-    Args:
-        date_slc_dir (str): slc directory
-        sub_swath (int list): sub_swath number
-        pol (str): polarization
-        bursts (int list): burst number
-        rlks (int): range looks
-        alks (int): azimuth looks
-        out_dir (str): output directory
-    """
-    slc_tab1 = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1], rlks, alks, out_dir)
-    slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3], rlks, alks, out_dir)
-
-    slc_tab = os.path.join(out_dir, 'slc_tab')
-    merge_tab([slc_tab1, slc_tab2], slc_tab)
-    os.remove(slc_tab1)
-    os.remove(slc_tab2)
-
-    slc_mosaic(slc_tab, rlks, alks, out_dir)
-
-
-def copy_mosaic_three(date_slc_dir, sub_swath, pol, bursts, rlks, alks,
-                      out_dir):
-    """Copy and mosaic three sub_swaths S1 TOPS SLC
-
-    Args:
-        date_slc_dir (str): slc directory
-        sub_swath (int list): sub_swath number
-        pol (str): polarization
-        bursts (int list): burst number
-        rlks (int): range looks
-        alks (int): azimuth looks
-        out_dir (str): output directory
-    """
-    slc_tab1 = slc_copy(date_slc_dir, sub_swath[0], pol, bursts[0], bursts[1], rlks, alks, out_dir)
-    slc_tab2 = slc_copy(date_slc_dir, sub_swath[1], pol, bursts[2], bursts[3], rlks, alks, out_dir)
-    slc_tab3 = slc_copy(date_slc_dir, sub_swath[2], pol, bursts[4], bursts[5], rlks, alks, out_dir)
-
-    slc_tab = os.path.join(out_dir, 'slc_tab')
-    merge_tab([slc_tab1, slc_tab2, slc_tab3], slc_tab)
-    os.remove(slc_tab1)
-    os.remove(slc_tab2)
-    os.remove(slc_tab3)
-
-    slc_mosaic(slc_tab, rlks, alks, out_dir)
+    return slc_out, slc_par_out
 
 
 def parse_table(table):
@@ -316,21 +212,15 @@ def main():
 
             table = os.path.join(date_slc_dir, f'{date}.burst_number_table')
             iw_burst = get_iw_burst(ref_table, table)
-            sub_swath_num = len(iw_burst.keys())
-
-            if sub_swath_num == 1:
-                exec_func = copy_mosaic_one
-            elif sub_swath_num == 2:
-                exec_func = copy_mosaic_two
-            else:
-                exec_func = copy_mosaic_three
 
             sub_swath = [int(i[2:]) for i in iw_burst.keys()]
             burst_num = []
             for i in iw_burst.values():
                 burst_num += i
 
-            exec_func(date_slc_dir, sub_swath, pol, burst_num, rlks, alks,out_date_slc_dir)
+            for i in range(len(sub_swath)):
+                slc, slc_par = slc_copy(date_slc_dir, sub_swath[i], pol, burst_num[2*i], burst_num[2*i+1], rlks, alks, out_date_slc_dir)
+                slc2bmp(slc, slc_par, rlks, alks, slc + '.bmp')
 
         print('\nAll done, enjoy it!\n')
     else:
