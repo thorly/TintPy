@@ -8,11 +8,11 @@
 import argparse
 import os
 import re
+import shutil
 import sys
 
 EXAMPLE = """Example:
-  python3 deramp_s1_a.py /ly/rslc 2 20181229
-  python3 deramp_s1_a.py /ly/rslc 1 2 20181229 -r 8 -a 2
+  python3 deramp_s1_a.py rslc rslc_deramp 20211229 3 -r 32 -a 8
 """
 
 
@@ -48,19 +48,6 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
         os.system(call_str)
 
 
-def write_tab(iw_slc_path, out_file):
-    """Write path of slc slc_par and tops_par to tab file
-
-    Args:
-        iw_slc_path (str): slc file
-        out_file (str): output file
-    """
-    with open(out_file, 'w+') as f:
-        f.write(
-            f"{iw_slc_path} {iw_slc_path + '.par'} {iw_slc_path + '.tops_par'}\n"
-        )
-
-
 def cmd_line_parser():
     parser = argparse.ArgumentParser(
         description=
@@ -68,13 +55,14 @@ def cmd_line_parser():
         formatter_class=argparse.RawTextHelpFormatter,
         epilog=EXAMPLE)
 
-    parser.add_argument('rslc_dir', help='directory path of RSLCs')
-    parser.add_argument('iw_num',
-                        choices=['1', '2', '3'],
-                        nargs='+',
-                        type=str,
-                        help='IW num for deramp')
+    parser.add_argument('rslc_dir', help='RSLCs directory')
+    parser.add_argument('out_dir', help='output directory')
     parser.add_argument('ref_slc', help='reference SLC')
+    parser.add_argument('sub_swath',
+                        type=int,
+                        nargs='+',
+                        choices=[1, 2, 3],
+                        help='sub_swath number for deramp')
     parser.add_argument('-r',
                         dest='rlks',
                         help='range looks',
@@ -85,6 +73,11 @@ def cmd_line_parser():
                         help='azimuth looks',
                         required=True,
                         type=int)
+    parser.add_argument('-p',
+                        dest='pol',
+                        help='polarization(defaults: vv)',
+                        choices=['vv', 'vh'],
+                        default='vv')
     inps = parser.parse_args()
 
     return inps
@@ -92,21 +85,25 @@ def cmd_line_parser():
 
 def main():
     inps = cmd_line_parser()
-    rslc_dir = inps.rslc_dir
-    iw_num = inps.iw_num
-    iw_num = iw_num.split()
+    rslc_dir = os.path.abspath(inps.rslc_dir)
+    out_dir = os.path.abspath(inps.out_dir)
+    sub_swath = inps.sub_swath
     rlks = inps.rlks
     alks = inps.alks
     ref_slc = inps.ref_slc
+    pol = inps.pol
 
     # check rslc_dir
-    rslc_dir = os.path.abspath(rslc_dir)
     if not os.path.isdir(rslc_dir):
-        sys.exit('Cannot find directory {}'.format(rslc_dir))
+        sys.exit('{} does not exist.'.format(rslc_dir))
+
+    # check out_dir
+    if not os.path.isdir(out_dir):
+        os.mkdir(out_dir)
 
     # get all date
-    all_date = sorted(
-        [i for i in os.listdir(rslc_dir) if re.findall(r'^\d{8}$', i)])
+    all_date = sorted([i for i in os.listdir(rslc_dir) if re.findall(r'^\d{8}$', i)])
+
     if len(all_date) < 2:
         sys.exit('No enough RSLCs.')
 
@@ -117,52 +114,64 @@ def main():
     else:
         sys.exit('Error date for ref_slc.')
 
-    s_dates = all_date
+    s_dates = all_date.copy()
     s_dates.remove(ref_slc)
 
     dates = [ref_slc] + s_dates
 
     for date in dates:
         rslc_date_dir = os.path.join(rslc_dir, date)
+
         tab = os.path.join(rslc_date_dir, date + '_tab')
 
-        if len(iw_num) == 1:
-            iw_slc = os.path.join(rslc_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
+        with open(tab, 'w+', encoding='utf-8') as f:
+            for i in sub_swath:
+                iw_rslc = os.path.join(rslc_date_dir, f'{date}.iw{i}.{pol}.rslc')
+                iw_rslc_par = iw_rslc + '.par'
+                iw_rslc_tops_par = iw_rslc + '.tops_par'
+                f.write(f'{iw_rslc} {iw_rslc_par} {iw_rslc_tops_par}\n')
 
-            write_tab(iw_slc, tab)
-
-        if len(iw_num) == 2:
-            iw_slc1 = os.path.join(rslc_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-            iw_slc2 = os.path.join(rslc_date_dir, f"{date}.iw{iw_num[1] * 2}.slc")
-
-            write_tab(iw_slc1, tab)
-            write_tab(iw_slc2, tab)
-
-        if len(iw_num) == 3:
-            iw_slc1 = os.path.join(rslc_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-            iw_slc2 = os.path.join(rslc_date_dir, f"{date}.iw{iw_num[1] * 2}.slc")
-            iw_slc3 = os.path.join(rslc_date_dir, f"{date}.iw{iw_num[2] * 2}.slc")
-
-            write_tab(iw_slc1, tab)
-            write_tab(iw_slc2, tab)
-            write_tab(iw_slc3, tab)
-
-        if date == ref_slc:
-            call_str = f"S1_deramp_TOPS_reference {tab}"
-            os.system(call_str)
-        else:
-            reference_tab = os.path.join(rslc_dir, ref_slc, ref_slc + '_tab')
-            call_str = f"S1_deramp_TOPS_slave {tab} {date} {reference_tab} {rlks} {alks} 0"
-            os.system(call_str)
+        os.chdir(rslc_date_dir)
 
         rslc_deramp = os.path.join(rslc_date_dir, date + ".rslc.deramp")
         rslc_deramp_par = rslc_deramp + '.par'
 
         if date == ref_slc:
+            call_str = f"S1_deramp_TOPS_reference {tab}"
+            os.system(call_str)
+
             call_str = f"SLC_mosaic_S1_TOPS {date}_tab.deramp {rslc_deramp} {rslc_deramp_par} {rlks} {alks} 1"
+            os.system(call_str)
+        else:
+            reference_tab = os.path.join(rslc_dir, ref_slc, ref_slc + '_tab')
+            call_str = f"S1_deramp_TOPS_slave {tab} {date} {reference_tab} {rlks} {alks} 1"
             os.system(call_str)
 
         slc2bmp(rslc_deramp, rslc_deramp_par, rlks, alks, rslc_deramp + '.bmp')
+
+        out_date_dir = os.path.join(out_dir, date)
+        if not os.path.isdir(out_date_dir):
+            os.mkdir(out_date_dir)
+
+        shutil.move(rslc_deramp, out_date_dir)
+        shutil.move(rslc_deramp_par, out_date_dir)
+        shutil.move(rslc_deramp + '.bmp', out_date_dir)
+
+    for date in dates:
+        tab = os.path.join(rslc_dir, date, date + '_tab')
+        tab_deramp = tab + '.deramp'
+        if date == ref_slc:
+            with open(tab_deramp, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.strip():
+                        for i in line.strip().split():
+                            if os.path.isfile(i):
+                                os.remove(i)
+                            if os.path.isfile(i + '.dph'):
+                                os.remove(i + '.dph')
+        os.remove(tab)
+        os.remove(tab_deramp)
 
     print('\nAll done, enjoy it!\n')
 

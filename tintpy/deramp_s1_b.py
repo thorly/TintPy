@@ -48,33 +48,36 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
         os.system(call_str)
 
 
-def write_tab(iw_slc_path, out_file):
+def write_tab(slc_date_dir, sub_swath, pol, out_file):
     """Write path of slc slc_par and tops_par to tab file
 
     Args:
-        iw_slc_path (str): slc file
+        slc_date_dir (str): slc directory
+        sub_swath (list): sub_swath number
+        pol (str): polarization
         out_file (str): output file
     """
-    with open(out_file, 'w+') as f:
-        f.write(
-            f"{iw_slc_path} {iw_slc_path + '.par'} {iw_slc_path + '.tops_par'}\n"
-        )
+    date = os.path.basename(slc_date_dir)[0:8]
+    with open(out_file, 'w+', encoding='utf-8') as f:
+            for i in sub_swath:
+                iw_rslc = os.path.join(slc_date_dir, f'{date}.iw{i}.{pol}.slc')
+                iw_rslc_par = iw_rslc + '.par'
+                iw_rslc_tops_par = iw_rslc + '.tops_par'
+                f.write(f'{iw_rslc} {iw_rslc_par} {iw_rslc_tops_par}\n')
 
 
 def cmd_line_parser():
     parser = argparse.ArgumentParser(
-        description=
-        'Calculate and subtract S1 TOPS Doppler phase from burst SLC data before coregistration.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+        description='Calculate and subtract S1 TOPS Doppler phase from burst SLC data before coregistration.',
+        formatter_class=argparse.RawTextHelpFormatter,epilog=EXAMPLE)
 
     parser.add_argument('slc_dir', help='directory path of SLCs')
     parser.add_argument('out_dir', help='directory path of deramped SLCs')
-    parser.add_argument('iw_num',
-                        choices=['1', '2', '3'],
+    parser.add_argument('sub_swath',
+                        type=int,
                         nargs='+',
-                        type=str,
-                        help='IW num for deramp')
+                        choices=[1, 2, 3],
+                        help='sub_swath number for deramp')
     parser.add_argument('-r',
                         dest='rlks',
                         help='range looks',
@@ -85,6 +88,11 @@ def cmd_line_parser():
                         help='azimuth looks',
                         required=True,
                         type=int)
+    parser.add_argument('-p',
+                        dest='pol',
+                        help='polarization(defaults: vv)',
+                        choices=['vv', 'vh'],
+                        default='vv')
     inps = parser.parse_args()
 
     return inps
@@ -92,25 +100,26 @@ def cmd_line_parser():
 
 def main():
     inps = cmd_line_parser()
-    slc_dir = inps.slc_dir
-    out_dir = inps.out_dir
-    iw_num = inps.iw_num
+    slc_dir = os.path.abspath(inps.slc_dir)
+    out_dir = os.path.abspath(inps.out_dir)
+    sub_swath = inps.sub_swath
     rlks = inps.rlks
     alks = inps.alks
+    pol = inps.pol
 
     # check slc_dir
-    slc_dir = os.path.abspath(slc_dir)
     if not os.path.isdir(slc_dir):
-        sys.exit('Cannot find directory {}'.format(slc_dir))
+        sys.exit('{} does not exist.'.format(slc_dir))
 
     # check out_dir
-    out_dir = os.path.abspath(out_dir)
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
     # get all dates
-    dates = sorted(
-        [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+    dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+
+    if len(dates) < 1:
+        sys.exit('No SLC.')
 
     for date in dates:
         slc_date_dir = os.path.join(slc_dir, date)
@@ -122,44 +131,8 @@ def main():
         tab = os.path.join(out_date_dir, date + '_tab')
         tab_deramp = os.path.join(out_date_dir, date + '_tab.deramp')
 
-        if len(iw_num) == 1:
-            iw_slc = os.path.join(slc_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-
-            iw_slc_deramp = os.path.join(out_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-
-            write_tab(iw_slc, tab)
-
-            write_tab(iw_slc_deramp, tab_deramp)
-
-        if len(iw_num) == 2:
-            iw_slc1 = os.path.join(slc_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-            iw_slc2 = os.path.join(slc_date_dir, f"{date}.iw{iw_num[1] * 2}.slc")
-
-            iw_slc1_deramp = os.path.join(out_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-            iw_slc2_deramp = os.path.join(out_date_dir, f"{date}.iw{iw_num[1] * 2}.slc")
-
-            write_tab(iw_slc1, tab)
-            write_tab(iw_slc2, tab)
-
-            write_tab(iw_slc1_deramp, tab_deramp)
-            write_tab(iw_slc2_deramp, tab_deramp)
-
-        if len(iw_num) == 3:
-            iw_slc1 = os.path.join(slc_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-            iw_slc2 = os.path.join(slc_date_dir, f"{date}.iw{iw_num[1] * 2}.slc")
-            iw_slc3 = os.path.join(slc_date_dir, f"{date}.iw{iw_num[2] * 2}.slc")
-
-            iw_slc1_deramp = os.path.join(out_date_dir, f"{date}.iw{iw_num[0] * 2}.slc")
-            iw_slc2_deramp = os.path.join(out_date_dir, f"{date}.iw{iw_num[1] * 2}.slc")
-            iw_slc3_deramp = os.path.join(out_date_dir, f"{date}.iw{iw_num[2] * 2}.slc")
-
-            write_tab(iw_slc1, tab)
-            write_tab(iw_slc2, tab)
-            write_tab(iw_slc3, tab)
-
-            write_tab(iw_slc1_deramp, tab_deramp)
-            write_tab(iw_slc2_deramp, tab_deramp)
-            write_tab(iw_slc3_deramp, tab_deramp)
+        write_tab(slc_date_dir, sub_swath, pol, tab)
+        write_tab(out_date_dir, sub_swath, pol, tab_deramp)
 
         os.chdir(out_date_dir)
 
@@ -171,6 +144,9 @@ def main():
 
         call_str = f"SLC_mosaic_S1_TOPS {tab_deramp} {slc_deramp} {slc_deramp_par} {rlks} {alks} 1"
         os.system(call_str)
+
+        os.remove(tab)
+        os.remove(tab_deramp)
 
         slc2bmp(slc_deramp, slc_deramp_par, rlks, alks, slc_deramp + '.bmp')
 

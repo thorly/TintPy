@@ -106,7 +106,6 @@ def make_rdc_dem(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
     call_str = f"offset_pwrm pix_sigma0 {mli} {date}.diff_par offs snr 64 64 offsets 2 100 100 5.0"
     os.system(call_str)
 
-
     call_str = f"offset_fitm offs snr {date}.diff_par coffs coffsets 5.0 1"
     os.system(call_str)
 
@@ -117,7 +116,6 @@ def make_rdc_dem(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
 
     call_str = f"geocode_back {mli} {width_mli} lookup_table_fine {mli}.geo {width_utm_dem} - 2 0"
     os.system(call_str)
-
 
     call_str = f"raspwr {mli}.geo {width_utm_dem} 1 0 1 1 1. .35 1 {mli}.geo.bmp"
     os.system(call_str)
@@ -161,6 +159,41 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
     if width:
         call_str = f'rasSLC {slc} {width} 1 0 {rlks} {alks} 1. .35 1 0 0 {bmp}'
         os.system(call_str)
+
+
+def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, out_dir):
+    """Calculate SLC mosaic of Sentinel-1 TOPS burst SLC data
+
+    Args:
+        date_slc_dir (str): slc directory
+        sub_swaths (list): sub_swath number
+        pol (str): polarization
+        rlks (int): range looks
+        alks (int): azimuth looks
+        out_dir (str): output directory
+
+    Returns:
+        tuple: mosaiced slc and par
+    """
+    date = os.path.basename(date_slc_dir)
+
+    slc_tab = os.path.join(date_slc_dir, 'slc_tab')
+    with open(slc_tab, 'w+', encoding='utf-8') as f:
+        for i in sub_swaths:
+            slc = os.path.join(date_slc_dir, f'{date}.iw{i}.{pol}.slc')
+            slc_par = slc + '.par'
+            tops_par = slc + '.tops_par'
+            f.write(f'{slc} {slc_par} {tops_par}\n')
+
+    slc_out = os.path.join(out_dir, date + '.slc')
+    slc_par_out = os.path.join(out_dir, date + '.slc.par')
+
+    call_str = f"SLC_mosaic_S1_TOPS {slc_tab} {slc_out} {slc_par_out} {rlks} {alks}"
+    os.system(call_str)
+
+    os.remove(slc_tab)
+
+    return slc_out, slc_par_out
 
 
 def print_coreg_quality(quality_files):
@@ -243,35 +276,22 @@ def main():
     else:
         sys.exit('Error date for ref_slc.')
 
+    # copy reference iw slc to rslc_dir for deramp
     m_date = ref_slc
     m_slc_dir = os.path.join(slc_dir, m_date)
-    m_slc = os.path.join(m_slc_dir, m_date + '.slc')
-    m_slc_par = m_slc + '.par'
-
-    m_mli = os.path.join(m_slc_dir, f"{m_date}.mli")
-    m_mli_par = m_mli + '.par'
-
-    # copy reference slc to rslc_dir
     m_rslc_dir = os.path.join(rslc_dir, m_date)
 
     if not os.path.isdir(m_rslc_dir):
         os.mkdir(m_rslc_dir)
 
-    m_rslc = os.path.join(m_rslc_dir, m_date + '.rslc')
-    m_rslc_par = m_rslc + '.par'
-
-    print('Copy reference slc to {}'.format(m_rslc_dir))
-    copy_file(m_slc, m_rslc)
-    copy_file(m_slc_par, m_rslc_par)
-
-    # copy reference iw slc to rslc_dir for deramp
     if flag == 't':
+        print('Copy reference iw slc to {}'.format(m_rslc_dir))
         for i in sub_swath:
             iw_slc = os.path.join(m_slc_dir, f'{m_date}.iw{i}.{pol}.slc')
             iw_slc_par = iw_slc + '.par'
             iw_slc_tops_par = iw_slc + '.tops_par'
 
-            iw_rslc = os.path.join(m_rslc_dir, f'{m_date}.iw{i}.{pol}.slc')
+            iw_rslc = os.path.join(m_rslc_dir, f'{m_date}.iw{i}.{pol}.rslc')
             iw_rslc_par = iw_rslc + '.par'
             iw_rslc_tops_par = iw_rslc + '.tops_par'
 
@@ -280,88 +300,51 @@ def main():
             copy_file(iw_slc_tops_par, iw_rslc_tops_par)
 
     # get slave dates
-    s_dates = dates
+    s_dates = dates.copy()
     s_dates.remove(m_date)
+
+    m_slc, m_slc_par = slc_mosaic(m_slc_dir, sub_swath, pol, rlks, alks, m_slc_dir)
 
     rdc_dem = make_rdc_dem(m_slc, m_slc_par, dem, dem_par, rlks, alks, m_slc_dir)
 
+    copy_ref_flag = True
+
     for s_date in s_dates:
         s_slc_dir = os.path.join(slc_dir, s_date)
-
-        s_slc = os.path.join(s_slc_dir, s_date + '.slc')
-        s_slc_par = s_slc + '.par'
 
         s_rslc_dir = os.path.join(rslc_dir, s_date)
 
         if not os.path.isdir(s_rslc_dir):
             os.mkdir(s_rslc_dir)
 
-        if len(sub_swath) == 1:
-            i = sub_swath[0]
-
-            s_iw_slc = os.path.join(s_slc_dir, f"{s_date}.iw{i}.{pol}.slc")
-
-            m_iw_slc = os.path.join(m_slc_dir, f"{m_date}.iw{i}.{pol}.slc")
-
-            s_iw_rslc = os.path.join(s_rslc_dir, f"{s_date}.iw{i}.{pol}.rslc")
-
-            slc_tab_s = os.path.join(s_rslc_dir, 'slc_tab_s')
-            slc_tab_m = os.path.join(s_rslc_dir, 'slc_tab_m')
-            rslc_tab = os.path.join(s_rslc_dir, 'rslc_tab')
-
-            write_tab([s_iw_slc], slc_tab_s)
-            write_tab([m_iw_slc], slc_tab_m)
-            write_tab([s_iw_rslc], rslc_tab)
-
-        if len(sub_swath) == 2:
-            i1, i2 = sub_swath[0], sub_swath[1]
-
-            s_iw_slc1 = os.path.join(s_slc_dir, f"{s_date}.iw{i1}.{pol}.slc")
-            s_iw_slc2 = os.path.join(s_slc_dir, f"{s_date}.iw{i2}.{pol}.slc")
-
-            m_iw_slc1 = os.path.join(m_slc_dir, f"{m_date}.iw{i1}.{pol}.slc")
-            m_iw_slc2 = os.path.join(m_slc_dir, f"{m_date}.iw{i2}.{pol}.slc")
-
-            s_iw_rslc1 = os.path.join(s_rslc_dir, f"{s_date}.iw{i1}.{pol}.rslc")
-            s_iw_rslc2 = os.path.join(s_rslc_dir, f"{s_date}.iw{i2}.{pol}.rslc")
-
-            slc_tab_s = os.path.join(s_rslc_dir, 'slc_tab_s')
-            slc_tab_m = os.path.join(s_rslc_dir, 'slc_tab_m')
-            rslc_tab = os.path.join(s_rslc_dir, 'rslc_tab')
-
-            write_tab([s_iw_slc1, s_iw_slc2], slc_tab_s)
-            write_tab([m_iw_slc1, m_iw_slc2], slc_tab_m)
-            write_tab([s_iw_rslc1, s_iw_rslc2], rslc_tab)
-
-        if len(sub_swath) == 3:
-            i1, i2, i3 = sub_swath[0], sub_swath[1], sub_swath[2]
-
-            s_iw_slc1 = os.path.join(s_slc_dir, f"{s_date}.iw{i1}.{pol}.slc")
-            s_iw_slc2 = os.path.join(s_slc_dir, f"{s_date}.iw{i2}.{pol}.slc")
-            s_iw_slc3 = os.path.join(s_slc_dir, f"{s_date}.iw{i3}.{pol}.slc")
-
-            m_iw_slc1 = os.path.join(m_slc_dir, f"{m_date}.iw{i1}.{pol}.slc")
-            m_iw_slc2 = os.path.join(m_slc_dir, f"{m_date}.iw{i2}.{pol}.slc")
-            m_iw_slc3 = os.path.join(m_slc_dir, f"{m_date}.iw{i3}.{pol}.slc")
-
-            s_iw_rslc1 = os.path.join(s_rslc_dir, f"{s_date}.iw{i1}.{pol}.rslc")
-            s_iw_rslc2 = os.path.join(s_rslc_dir, f"{s_date}.iw{i2}.{pol}.rslc")
-            s_iw_rslc3 = os.path.join(s_rslc_dir, f"{s_date}.iw{i3}.{pol}.rslc")
-
-            slc_tab_s = os.path.join(s_rslc_dir, 'slc_tab_s')
-            slc_tab_m = os.path.join(s_rslc_dir, 'slc_tab_m')
-            rslc_tab = os.path.join(s_rslc_dir, 'rslc_tab')
-
-            write_tab([s_iw_slc1, s_iw_slc2, s_iw_slc3], slc_tab_s)
-            write_tab([m_iw_slc1, m_iw_slc2, m_iw_slc3], slc_tab_m)
-            write_tab([s_iw_rslc1, s_iw_rslc2, s_iw_rslc3], rslc_tab)
-
         os.chdir(s_rslc_dir)
 
-        call_str = f"S1_coreg_TOPS {slc_tab_m} {m_date} {slc_tab_s} {s_date} {rslc_tab} {rdc_dem} {rlks} {alks} - - 0.7 0.001 0.7 1"
+        s_iw_slcs = []
+        m_iw_slcs = []
+        s_iw_rslcs = []
+
+        for i in sub_swath:
+            s_iw_slc = os.path.join(s_slc_dir, f"{s_date}.iw{i}.{pol}.slc")
+            m_iw_slc = os.path.join(m_slc_dir, f"{m_date}.iw{i}.{pol}.slc")
+            s_iw_rslc = os.path.join(s_rslc_dir, f"{s_date}.iw{i}.{pol}.rslc")
+
+            s_iw_slcs.append(s_iw_slc)
+            m_iw_slcs.append(m_iw_slc)
+            s_iw_rslcs.append(s_iw_rslc)
+
+        write_tab(s_iw_slcs, 'slc_tab_s')
+        write_tab(m_iw_slcs, 'slc_tab_m')
+        write_tab(s_iw_rslcs, 'rslc_tab')
+
+        call_str = f"S1_coreg_TOPS slc_tab_m {m_date} slc_tab_s {s_date} rslc_tab {rdc_dem} {rlks} {alks} - - 0.7 0.001 0.7 1"
         os.system(call_str)
 
-        # delete files
+        if copy_ref_flag:
+            shutil.move(m_date + '.rslc', m_rslc_dir)
+            shutil.move(m_date + '.rslc.par', m_rslc_dir)
+            copy_ref_flag = False
+
+        # clean s_rslc dir
         save_files = []
         save_files.append(s_date + '.rslc')
         save_files.append(s_date + '.rslc.par')
@@ -373,23 +356,17 @@ def main():
             for i in sub_swath:
                 iw_rslc = f'{s_date}.iw{i}.{pol}.rslc'
                 iw_rslc_par = iw_rslc + '.par'
-                iw_rslc_tops_par = iw_slc + '.tops_par'
+                iw_rslc_tops_par = iw_rslc + '.tops_par'
                 save_files.append(iw_rslc)
                 save_files.append(iw_rslc_par)
                 save_files.append(iw_rslc_tops_par)
 
-        save_files = [os.path.join(s_rslc_dir, i) for i in save_files]
-
-        for f in os.listdir(s_rslc_dir):
-            path = os.path.join(s_rslc_dir, f)
-            if path not in save_files:
-                os.remove(path)
+        for file in os.listdir(s_rslc_dir):
+            if file not in save_files:
+                os.remove(file)
 
     # clean ref_slc dir
     save_files = []
-    save_files.append(m_slc)
-    save_files.append(m_slc + '.bmp')
-    save_files.append(m_slc_par)
 
     for i in sub_swath:
         iw_slc = os.path.join(m_slc_dir, f'{m_date}.iw{i}.{pol}.slc')
