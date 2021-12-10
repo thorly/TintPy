@@ -14,7 +14,7 @@
 
 -------------------------------------------------------------------        -------------------------------------------------------------------
 |     |                                                           |        |     |                                                           |
-|  5  |       Copy and mosaic bursts using s1_copy_mosaic.py      |        |  6  |  Download and make DEM using download_dem.py make_dem.py  |
+|  5  |        Copy bursts using s1_copy_bursts.py                |        |  6  |  Download and make DEM using download_dem.py make_dem.py  |
 |     |                                                           |        |     |                                                           |
 -------------------------------------------------------------------        -------------------------------------------------------------------
 

@@ -114,10 +114,12 @@ def make_rdc_dem(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
     call_str = f"gc_map_fine lookup_table {width_utm_dem} {date}.diff_par lookup_table_fine 1"
     os.system(call_str)
 
-    call_str = f"geocode_back {mli} {width_mli} lookup_table_fine {mli}.geo {width_utm_dem} - 2 0"
+    mli_name = os.path.basename(mli)
+
+    call_str = f"geocode_back {mli} {width_mli} lookup_table_fine {mli_name}.geo {width_utm_dem} - 2 0"
     os.system(call_str)
 
-    call_str = f"raspwr {mli}.geo {width_utm_dem} 1 0 1 1 1. .35 1 {mli}.geo.bmp"
+    call_str = f"raspwr {mli_name}.geo {width_utm_dem} 1 0 1 1 1. .35 1 {mli_name}.geo.bmp"
     os.system(call_str)
 
     length_mli = read_gamma_par(mli_par, 'azimuth_lines')

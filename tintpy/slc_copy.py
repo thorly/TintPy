@@ -169,26 +169,29 @@ def gen_grid(dem_seg_par):
     return lons, lats
 
 
-def find_nearest_point(lons, lats, lon_step, lat_step, point):
+def find_nearest_point(lons, lats, point):
     """Find nearest point
 
     Args:
         lons (array): longitude grid
         lats (array): latitude grid
-        lon_step (float): longitude step
-        lat_step (float): latitude step
         point (list): [lon, lat]
 
     Returns:
         tuple: (row, col)
     """
     r, c = None, None
+
+    lon_step = abs(lons[0, 0] - lons[0, 1])
+    lat_step = abs(lats[0, 0] - lats[1, 0])
     row, col = lons.shape
+
     for i in range(row):
         for j in range(col):
-            if abs(lons[i, j] - point[0]) <= abs(lon_step / 2) and abs(lats[i, j] - point[1]) <= abs(lat_step / 2):
-                r = i
-                c = j
+            delta_lon = abs(lons[i, j] - point[0])
+            delta_lat = abs(lats[i, j] - point[1])
+            if delta_lon <= abs(lon_step / 2) and delta_lat <= abs(lat_step / 2):
+                r, c = i, j
                 return r, c
 
     return r, c
@@ -222,8 +225,11 @@ def get_rdr_from_kml(lookup_table, dem_seg_par, kml, rlks, alks):
             aoff1 = []
             for i in range(5):
                 r, c = find_nearest_point(lons, lats, lon_step, lat_step, polygon[i])
-                roff1.append(range_data[r, c] * rlks)
-                aoff1.append(azimuth_data[r, c] * alks)
+                if r and c:
+                    roff1.append(range_data[r, c] * rlks)
+                    aoff1.append(azimuth_data[r, c] * alks)
+                else:
+                    sys.exit('{polygon[i]} out of range')
 
             roff_min, roff_max = int(min(roff1)), int(max(roff1))
             aoff_min, aoff_max = int(min(aoff1)), int(max(aoff1))
@@ -385,8 +391,7 @@ def main():
                         dem_par = dem + '.par'
                         break
                     else:
-                        sys.exit(
-                            f'Cannot find *.dem and *.dem.par in {dem_dir}.')
+                        sys.exit(f'Cannot find *.dem and *.dem.par in {dem_dir}.')
 
             if not os.path.isfile(kml):
                 sys.exit("{} does not exist.".format(kml))
@@ -403,8 +408,7 @@ def main():
 
             shutil.rmtree(tmp_dir)
         else:
-            sys.exit(
-                'dem_dir and kml file are required parameters for geo method')
+            sys.exit('dem_dir and kml file are required parameters for geo method')
 
     for date in dates[0:length]:
         slc = os.path.join(slc_dir, date, date + extension)
