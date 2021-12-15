@@ -224,7 +224,7 @@ def get_rdr_from_kml(lookup_table, dem_seg_par, kml, rlks, alks):
             roff1 = []
             aoff1 = []
             for i in range(5):
-                r, c = find_nearest_point(lons, lats, lon_step, lat_step, polygon[i])
+                r, c = find_nearest_point(lons, lats, polygon[i])
                 if r and c:
                     roff1.append(range_data[r, c] * rlks)
                     aoff1.append(azimuth_data[r, c] * alks)
