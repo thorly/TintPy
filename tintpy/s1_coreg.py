@@ -342,8 +342,12 @@ def main():
         os.system(call_str)
 
         if copy_ref_flag:
-            shutil.move(m_date + '.rslc', m_rslc_dir)
-            shutil.move(m_date + '.rslc.par', m_rslc_dir)
+            dst_rslc = os.path.join(m_rslc_dir, m_date + '.rslc')
+            dst_rslc_par = dst_rslc + '.par'
+            if not os.path.isfile(dst_rslc):
+                shutil.move(m_date + '.rslc', m_rslc_dir)
+            if not os.path.isfile(dst_rslc_par):
+                shutil.move(m_date + '.rslc.par', m_rslc_dir)
             copy_ref_flag = False
 
         # clean s_rslc dir
