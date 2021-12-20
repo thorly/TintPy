@@ -241,6 +241,7 @@ def make_dem(processor, tif, out_file):
         tuple: dem_data, lon_lat, size
     """
     dem_data, lon_lat, size = read_gdal_file(tif)
+    ori_dem_data = dem_data.copy()
 
     if processor == 'GAMMA':
         if dem_data.dtype == 'float32':
@@ -263,7 +264,9 @@ def make_dem(processor, tif, out_file):
         dem_data.tofile(out_file)
         write_saracape_par(out_file + '.hdr', out_file + '.sml', lon_lat, size)
 
-    return dem_data, lon_lat, size
+    dem_data = None
+    
+    return ori_dem_data, lon_lat, size
 
 
 def uncompress_zips(zip_files, out_dir):
