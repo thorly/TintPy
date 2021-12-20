@@ -305,9 +305,17 @@ def main():
     s_dates = dates.copy()
     s_dates.remove(m_date)
 
-    m_slc, m_slc_par = slc_mosaic(m_slc_dir, sub_swath, pol, rlks, alks, m_slc_dir)
+    # make rdr dem
+    geo_dir = os.path.join(rslc_dir, 'geo')
 
-    rdc_dem = make_rdc_dem(m_slc, m_slc_par, dem, dem_par, rlks, alks, m_slc_dir)
+    if os.path.isdir(geo_dir):
+        shutil.rmtree(geo_dir)
+
+    os.mkdir(geo_dir)
+
+    m_slc, m_slc_par = slc_mosaic(m_slc_dir, sub_swath, pol, rlks, alks, geo_dir)
+
+    rdc_dem = make_rdc_dem(m_slc, m_slc_par, dem, dem_par, rlks, alks, geo_dir)
 
     copy_ref_flag = True
 
@@ -371,24 +379,9 @@ def main():
             if file not in save_files:
                 os.remove(file)
 
-    # clean ref_slc dir
-    save_files = []
-
-    for i in sub_swath:
-        iw_slc = os.path.join(m_slc_dir, f'{m_date}.iw{i}.{pol}.slc')
-        iw_slc_bmp = iw_slc + '.bmp'
-        iw_slc_par = iw_slc + '.par'
-        iw_slc_tops_par = iw_slc + '.tops_par'
-
-        save_files.append(iw_slc)
-        save_files.append(iw_slc_bmp)
-        save_files.append(iw_slc_par)
-        save_files.append(iw_slc_tops_par)
-
-    for f in os.listdir(m_slc_dir):
-        path = os.path.join(m_slc_dir, f)
-        if path not in save_files:
-            os.remove(path)
+    # del geo_dir
+    if os.path.isdir(geo_dir):
+        shutil.rmtree(geo_dir)
 
     # generate bmp for rslc
     rslc_files = glob.glob(rslc_dir + '/*/*.rslc')
