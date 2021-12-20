@@ -29,7 +29,7 @@ queryfmt2 = "%Y/%m/%d/"
 credentials = ('gnssguest', 'gnssguest')
 
 EXAMPLE = """Example:
-  python3 fetchOrbit.py /ly/sentinel.txt /ly/orbits
+  python3 fetch_orbit.py /ly/sentinel.txt /ly/orbits
 """
 
 
