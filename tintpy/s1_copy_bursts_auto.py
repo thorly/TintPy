@@ -11,7 +11,8 @@ import re
 import sys
 
 EXAMPLE = '''Example:
-  python3 s1_copy_bursts_auto.py slc slc_extract ref.number_table -r 32 -a 8 -p vv -n 1
+  python3 s1_copy_bursts_auto.py slc slc_extract ref.number_table 32 8
+  python3 s1_copy_bursts_auto.py slc slc_extract ref.number_table 32 8 -p vv -n 1
 '''
 
 
@@ -22,8 +23,8 @@ def cmdLineParse():
     parser.add_argument('slc_dir', help='slc directory')
     parser.add_argument('out_slc_dir', help='directory saving processed slc')
     parser.add_argument('ref_table', help='reference burst number table')
-    parser.add_argument('-r', dest='rlks', help='range looks', type=int, required=True)
-    parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
+    parser.add_argument('rlks', help='range looks', type=int)
+    parser.add_argument('alks', help='azimuth looks', type=int)
     parser.add_argument('-p', dest='pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
     parser.add_argument('-n', dest='num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
 
