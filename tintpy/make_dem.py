@@ -42,8 +42,8 @@ def read_gdal_file(file, band=1):
     return data, lon_lat, size
 
 
-def plot_data(data, lon_lat, out_file, cmap='rainbow'):
-    """Plot data
+def draw_img(data, lon_lat, out_file, cmap='rainbow'):
+    """Draw image from array
 
     Args:
         data (array): numpy array
@@ -350,7 +350,7 @@ def main():
             data, lon_lat, _ = make_dem(processor, mosaiced_tif, out_file)
 
             print('Plot data.')
-            plot_data(data, lon_lat, out_file + '.png')
+            draw_img(data, lon_lat, out_file + '.png')
 
             data = None
             print('All done, enjoy it!\n')
@@ -360,7 +360,7 @@ def main():
         data, lon_lat, _ = make_dem(processor, tifs[0], out_file)
 
         print('Plot data.')
-        plot_data(data, lon_lat, out_file + '.png')
+        draw_img(data, lon_lat, out_file + '.png')
 
         data = None
         print('All done, enjoy it!\n')
