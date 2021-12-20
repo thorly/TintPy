@@ -97,7 +97,7 @@ def make_rdc_dem(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
 
     width_mli = read_gamma_par(mli_par, 'range_samples')
 
-    call_str = f"raspwr pix_gamma {width_mli} - - - - - - - pix_gamma0.bmp"
+    call_str = f"raspwr pix_gamma0 {width_mli} - - - - - - - pix_gamma0.bmp"
     os.system(call_str)
 
     call_str = f"create_diff_par {mli_par} - {date}.diff_par 1 0"
