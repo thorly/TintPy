@@ -294,14 +294,11 @@ def download_dem(url, out_dir):
 
 
 EXAMPLE = '''Example:
-  # only get urls of srtm30 or srtm90 (1*1 degree)
+  # only get urls
   python3 download_dem.py srtm3011 100 101 20 24
 
-  # get urls srtm90 and download them (5*5 degrees)
+  # get urls and download them (for srtm3011 and srtm9011, you must install wget)
   python3 download_dem.py srtm9055 100 101 20 24 -o /ly/dem
-
-  # get urls of ALOS DSM and download them
-  python3 download_dem.py alos 100 101 20 24 -o /ly/dem
 '''
 
 
@@ -312,6 +309,7 @@ def cmdline_parser():
         choices=['alos', 'ALOS', 'srtm9011', 'srtm3011', 'SRTM9011', 'SRTM3011', 'srtm9055', 'SRTM9055'], help='DEM type')
     parser.add_argument('bound', type=float, nargs=4,help='DEM bound (W E S N)')
     parser.add_argument('-o',dest='out_dir', type=str, help='directory for saving DEM')
+
     inps = parser.parse_args()
 
     return inps
@@ -328,19 +326,22 @@ def main():
     urls = get_urls(flag, bound)
 
     # download DEM
-    if flag in ['ALOS', 'SRTM9055'] and out_dir:
+    if out_dir:
         out_dir = os.path.abspath(out_dir)
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir)
 
-        for url in urls:
-            print(f"\nStart to download {url.split('/')[-1]}")
-            download_dem(url, out_dir)
+        if flag in ['ALOS', 'SRTM9055']:
+            for url in urls:
+                print(f"\nStart to download {url.split('/')[-1]}")
+                download_dem(url, out_dir)
 
-    if flag in ['SRTM3011', 'SRTM9011'] and out_dir:
-        print(
-            'Cannot download SRTM DEM (1*1 degree), you can download them manually.'
-        )
+        if flag in ['SRTM3011', 'SRTM9011']:
+            os.chdir(out_dir)
+            for url in urls:
+                print(f"\nStart to download {url.split('/')[-1]}")
+                cmd_str = f"wget {url} --user=leiyuan --password=PVmg2NeCSLatf3v"
+                os.system(cmd_str)
 
 
 if __name__ == "__main__":
