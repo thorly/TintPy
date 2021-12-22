@@ -156,46 +156,52 @@ def main():
     print('Copying files into {}'.format(interferograms_dir))
 
     for pair in pairs:
-        dst_ifg_dir = os.path.join(interferograms_dir, pair)
-
-        mk_dir(dst_ifg_dir)
-
-        # off file
-        off = pair + '.off'
-        off_path = os.path.join(diff_dir, off)
-        dst_off = pair + '_' + rlks + 'rlks.off'
-        dst_off_path = os.path.join(dst_ifg_dir, dst_off)
-        shutil.copy(off_path, dst_off_path)
-
-        # rmli file
         m_date = pair[0:8]
         s_date = pair[-8:]
 
+        off = pair + '.off'
+        off_path = os.path.join(diff_dir, off)
+        e1 = os.path.isfile(off_path)
+
         m_amp_par = m_date + mli_extension + '.par'
         m_amp_par_path = os.path.join(mli_dir, m_amp_par)
-        dst_m_amp_par = m_date + '_' + rlks + 'rlks.amp.par'
-        dst_m_amp_par_path = os.path.join(dst_ifg_dir, dst_m_amp_par)
-        shutil.copy(m_amp_par_path, dst_m_amp_par_path)
+        e2 = os.path.isfile(m_amp_par_path)
 
         s_amp_par = s_date + mli_extension + '.par'
         s_amp_par_path = os.path.join(mli_dir, s_amp_par)
-        dst_s_amp_par = s_date + '_' + rlks + 'rlks.amp.par'
-        dst_s_amp_par_path = os.path.join(dst_ifg_dir, dst_s_amp_par)
-        shutil.copy(s_amp_par_path, dst_s_amp_par_path)
+        e3 = os.path.isfile(s_amp_par_path)
 
-        # cc file
         cor = pair + cc_extension
         cor_path = os.path.join(diff_dir, cor)
-        dst_cor = 'filt_' + pair + '_' + rlks + 'rlks.cor'
-        dst_cor_path = os.path.join(dst_ifg_dir, dst_cor)
-        shutil.copy(cor_path, dst_cor_path)
+        e3 = os.path.isfile(cor_path)
 
-        # unw file
         unw = pair + unw_extension
         unw_path = os.path.join(diff_dir, unw)
-        dst_unw = 'diff_' + pair + '_' + rlks + 'rlks.unw'
-        dst_unw_path = os.path.join(dst_ifg_dir, dst_unw)
-        shutil.copy(unw_path, dst_unw_path)
+        e4 = os.path.isfile(unw_path)
+
+        if e1 and e2 and e3 and e4:
+            dst_ifg_dir = os.path.join(interferograms_dir, pair)
+            mk_dir(dst_ifg_dir)
+
+            dst_off = pair + '_' + rlks + 'rlks.off'
+            dst_off_path = os.path.join(dst_ifg_dir, dst_off)
+            shutil.copy(off_path, dst_off_path)
+
+            dst_m_amp_par = m_date + '_' + rlks + 'rlks.amp.par'
+            dst_m_amp_par_path = os.path.join(dst_ifg_dir, dst_m_amp_par)
+            shutil.copy(m_amp_par_path, dst_m_amp_par_path)
+
+            dst_s_amp_par = s_date + '_' + rlks + 'rlks.amp.par'
+            dst_s_amp_par_path = os.path.join(dst_ifg_dir, dst_s_amp_par)
+            shutil.copy(s_amp_par_path, dst_s_amp_par_path)
+
+            dst_cor = 'filt_' + pair + '_' + rlks + 'rlks.cor'
+            dst_cor_path = os.path.join(dst_ifg_dir, dst_cor)
+            shutil.copy(cor_path, dst_cor_path)
+
+            dst_unw = 'diff_' + pair + '_' + rlks + 'rlks.unw'
+            dst_unw_path = os.path.join(dst_ifg_dir, dst_unw)
+            shutil.copy(unw_path, dst_unw_path)
 
     # copy notebook to mintpy_dir
     try:
