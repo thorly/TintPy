@@ -2,7 +2,7 @@
 
 ## TintPy ##
 
-The Thorly InSAR Tools in Python (TintPy) is an package for Interferometric Synthetic Aperture Radar (InSAR) time series processing. It is mainly based on [GAMMA](https://www.gamma-rs.ch/no_cache/software.html), [MintPy](https://github.com/insarlab/MintPy), [StaMPS](https://github.com/dbekaert/StaMPS) and [GMT](https://www.generic-mapping-tools.org/).
+The Thorly InSAR Tools in Python (TintPy) is an package for Interferometric Synthetic Aperture Radar (InSAR) time series processing. It is mainly based on [GAMMA](https://www.gamma-rs.ch/no_cache/software.html), [MintPy](https://github.com/insarlab/MintPy) and [StaMPS](https://github.com/dbekaert/StaMPS).
 
 ## Setup TintPy ##
 

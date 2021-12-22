@@ -1,8 +1,8 @@
-How to run SBAS using StaMPS (GMT is required)
+How to run SBAS using StaMPS
 
 1. Select points based on coherence
 
-    1.1. prepare required data structure (sbas_mli_cc.py)
+    1.1. prepare required data structure (gamma2stamps.py)
     1.2. enter SMALL_BASELINES folder
     1.3. run mt_ml_select_gamma in MATLAB
     1.4. run ps_info to check point number (you can rerun step 3 until you are satisfied)
@@ -15,7 +15,7 @@ How to run SBAS using StaMPS (GMT is required)
 
 2. Select points based on amplitude dispersion
 
-    2.1. prepare required data structure (sbas_mli_ad.py)
+    2.1. prepare required data structure (gamma2stamps.py)
     2.2. run mt_prep_gamma in terminal, and open MATLAB
     2.3. run getparm to get all parameters, and you can set these parameters [setparm('density_rand', 20) setparm('weed_standard_dev',2)]
     2.4. run stamps(1,5)
