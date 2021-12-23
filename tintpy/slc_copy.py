@@ -30,8 +30,8 @@ def cmd_line_parser():
     parser.add_argument(
         'method',
         help=
-        'get ROI method, rdr for using radar coordinates， geo for using geographic coordinates',
-        choices={'rdr', 'geo'})
+        'get ROI method, rdc for using radar coordinates， geo for using geographic coordinates',
+        choices={'rdc', 'geo'})
 
     parser.add_argument('-r',
                         dest='roff',
@@ -70,8 +70,8 @@ def cmd_line_parser():
 
 
 EXAMPLE = """Example:
-   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdr -r 1 -nr 1000 -l 1 -nl 1000
-   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdr -r 1 -nr 1000 -l 1 -nl 1000 -n 1 -e slc
+   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdc -r 1 -nr 1000 -l 1 -nl 1000
+   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdc -r 1 -nr 1000 -l 1 -nl 1000 -n 1 -e slc
 
    python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 geo -d dem -k area.kml
    python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 geo -d dem -k area.kml -n 1 -e slc
@@ -146,99 +146,85 @@ def kml2polygon_dict(kml_file):
     return polygon_dict
 
 
-def gen_grid(dem_seg_par):
-    """Generate longitude and latitude grid
+def read_gamma_par(par_file, keyword):
+    """Extract value from par_file using keyword
 
     Args:
-        dem_seg_par (str): dem_seg.par file
+        par_file (str): GAMMA parameter file
+        keyword (str): keyword like "reange_sample"
+    """
+    value = None
+    with open(par_file, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            if line.count(keyword) == 1:
+                value = line.split()[1].strip()
+
+    return value
+
+
+def geo2sar(lon, lat, dem_seg_par, lookup_table, rlks, alks):
+    """Transform lon and lat to SAR coordinates
+
+    Args:
+        lon (float): longitude
+        lat (float): latitude
+        dem_seg_par (str): dem par
+        lookup_table (str): lookup file
+        rlks (int): range looks
+        alks (int): azimuth looks
 
     Returns:
-        tuple: longitude and latitude grid
+        tuple: (range, azimuth)
     """
-    width = int(read_gamma_par(dem_seg_par, 'width'))
     length = int(read_gamma_par(dem_seg_par, 'nlines'))
     upper_left_lat = float(read_gamma_par(dem_seg_par, 'corner_lat'))
     upper_left_lon = float(read_gamma_par(dem_seg_par, 'corner_lon'))
     lat_step = float(read_gamma_par(dem_seg_par, 'post_lat'))
     lon_step = float(read_gamma_par(dem_seg_par, 'post_lon'))
 
-    lon = np.linspace(upper_left_lon, upper_left_lon + lon_step * width, width)
-    lat = np.linspace(upper_left_lat, upper_left_lat + lat_step * length, length)
-    lons, lats = np.meshgrid(lon, lat)
+    xx = int((lat - upper_left_lat) / lat_step)
+    yy = int((lon - upper_left_lon) / lon_step)
 
-    return lons, lats
+    range_data, azimuth_data = read_lookup_table(lookup_table, length)
 
+    rng = int(range_data[xx, yy] * rlks)
+    azi = int(azimuth_data[xx, yy] * alks)
 
-def find_nearest_point(lons, lats, point):
-    """Find nearest point
-
-    Args:
-        lons (array): longitude grid
-        lats (array): latitude grid
-        point (list): [lon, lat]
-
-    Returns:
-        tuple: (row, col)
-    """
-    r, c = None, None
-
-    lon_step = abs(lons[0, 0] - lons[0, 1])
-    lat_step = abs(lats[0, 0] - lats[1, 0])
-    row, col = lons.shape
-
-    for i in range(row):
-        for j in range(col):
-            delta_lon = abs(lons[i, j] - point[0])
-            delta_lat = abs(lats[i, j] - point[1])
-            if delta_lon <= abs(lon_step / 2) and delta_lat <= abs(lat_step / 2):
-                r, c = i, j
-                return r, c
-
-    return r, c
+    return rng, azi
 
 
-def get_rdr_from_kml(lookup_table, dem_seg_par, kml, rlks, alks):
-    """Get radar cooridnates
+def get_copy_info_from_kml(lookup_table, dem_seg_par, kml, rlks, alks):
+    """Get copy information from kml file
 
     Args:
-        lookup_table (str): lookup table file
-        dem_seg_par (str): dem_seg.par file
+        lookup_table (str): lookup file
+        dem_seg_par (str): dem par
         kml (str): kml file
         rlks (int): range looks
         alks (int): azimuth looks
 
     Returns:
-        [type]: [description]
+        tuple: (roff, nr, loff, nl)
     """
     kml_area = kml2polygon_dict(kml)
-    lines = int(read_gamma_par(dem_seg_par, 'nlines'))
-    lat_step = float(read_gamma_par(dem_seg_par, 'post_lat'))
-    lon_step = float(read_gamma_par(dem_seg_par, 'post_lon'))
-    range_data, azimuth_data = read_lookup_table(lookup_table, lines)
-    lons, lats = gen_grid(dem_seg_par)
 
     roff, nr, loff, nl = None, None, None, None
 
     for _, polygon in kml_area.items():
-        if len(polygon) == 5:
-            roff1 = []
-            aoff1 = []
-            for i in range(5):
-                r, c = find_nearest_point(lons, lats, polygon[i])
-                if r and c:
-                    roff1.append(range_data[r, c] * rlks)
-                    aoff1.append(azimuth_data[r, c] * alks)
-                else:
-                    sys.exit('{polygon[i]} out of range')
+        roff1 = []
+        loff1 = []
+        for i in range(len(polygon)):
+            lon, lat = polygon[i][0], polygon[i][1]
+            rng, azi = geo2sar(lon, lat, dem_seg_par, lookup_table, rlks, alks)
+            roff1.append(rng)
+            loff1.append(azi)
 
-            roff_min, roff_max = int(min(roff1)), int(max(roff1))
-            aoff_min, aoff_max = int(min(aoff1)), int(max(aoff1))
-            roff = roff_min
-            nr = roff_max - roff_min
-            loff = aoff_min
-            nl = aoff_max - aoff_min
-        else:
-            sys.exit('The kml file must be a four-point polygon')
+        roff_min, roff_max = min(roff1), max(roff1)
+        loff_min, loff_max = min(loff1), max(loff1)
+        roff = roff_min
+        nr = roff_max - roff_min
+        loff = loff_min
+        nl = loff_max - loff_min
 
     return roff, nr, loff, nl
 
@@ -272,22 +258,6 @@ def gc_map(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
     os.system(call_str)
 
     return lookup_table, dem_seg_par
-
-
-def read_gamma_par(par_file, keyword):
-    """Extract value from par_file using keyword
-
-    Args:
-        par_file (str): GAMMA parameter file
-        keyword (str): keyword like "reange_sample"
-    """
-    value = None
-    with open(par_file, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            if line.count(keyword) == 1:
-                value = line.split()[1].strip()
-
-    return value
 
 
 def slc_copy(slc, slc_par, roff, nr, loff, nl, out_slc, out_slc_par):
@@ -332,7 +302,7 @@ def main():
     alks = inps.alks
     method = inps.method
 
-    # for rdr method
+    # for rdc method
     roff = inps.roff
     nr = inps.nr
     loff = inps.loff
@@ -369,11 +339,9 @@ def main():
     if not extension.startswith('.'):
         extension = '.' + extension
 
-    if method == 'rdr':
-        if roff and nr and loff and nl:
-            pass
-        else:
-            sys.exit('roff nr loff and nl are required parameters for rdr method')
+    if method == 'rdc':
+        if not (roff and nr and loff and nl):
+            sys.exit('roff nr loff and nl are required parameters for rdc method')
 
     if method == 'geo':
         if dem_dir and kml:
@@ -404,7 +372,7 @@ def main():
                 os.mkdir(tmp_dir)
 
             lookup_table, dem_seg_par = gc_map(slc, slc_par, dem, dem_par, rlks, alks, tmp_dir)
-            roff, nr, loff, nl = get_rdr_from_kml(lookup_table, dem_seg_par, kml, rlks, alks)
+            roff, nr, loff, nl = get_copy_info_from_kml(lookup_table, dem_seg_par, kml, rlks, alks)
 
             shutil.rmtree(tmp_dir)
         else:
