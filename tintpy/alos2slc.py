@@ -77,6 +77,25 @@ def get_date(summary_file):
     return date
 
 
+def get_date2(workreport):
+    """Get date from workreport file
+
+    Args:
+        workreport (str): workreport file
+
+    Returns:
+        str: date
+    """
+    date = None
+    with open(workreport, 'r') as f:
+        for line in f.readlines():
+            if line.startswith('Img_SceneCenterDateTime'):
+                res = re.findall(r'\d{8}', line)
+                if res:
+                    date = res[0]
+    return date
+
+
 def read_gamma_par(par_file, keyword):
     """Extract value from par_file using keyword
 
@@ -129,7 +148,11 @@ def reformat_alos(data_dir, output_dir, flag, rlks, alks):
                 led = glob.glob(os.path.join(slc_dir, 'LED-ALPSRP*'))
 
                 summary_file = os.path.join(slc_dir, 'summary.txt')
-                date = get_date(summary_file)
+                if os.path.isfile(summary_file):
+                    date = get_date(summary_file)
+                else:
+                    workreport = glob.glob(os.path.join(slc_dir, 'ALPSRP*workreport'))
+                    date = get_date2(workreport)
 
                 if date:
                     date_dir = os.path.join(output_dir, date)
