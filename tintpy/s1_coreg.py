@@ -247,10 +247,6 @@ def main():
     if not os.path.isdir(slc_dir):
         sys.exit("{} does not exist.".format(slc_dir))
 
-    # check rslc_dir
-    if not os.path.isdir(rslc_dir):
-        os.mkdir(rslc_dir)
-
     # check dem
     if not os.path.isdir(dem_dir):
         sys.exit("{} does not exist.".format(dem_dir))
@@ -266,8 +262,7 @@ def main():
                 sys.exit(f'Cannot find *.dem and *.dem.par in {dem_dir}.')
 
     # get all date
-    dates = sorted(
-        [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+    dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
     if len(dates) < 2:
         sys.exit('No enough SLCs.')
 
@@ -277,6 +272,32 @@ def main():
             sys.exit('No slc for {}.'.format(ref_slc))
     else:
         sys.exit('Error date for ref_slc.')
+
+    # check sub_swath
+    error_date = {}
+    for i in sub_swath:
+        error_date[i] = []
+        for date in dates:
+            iw_slc = os.path.join(slc_dir, date,  f'{date}.iw{i}.{pol}.slc')
+            iw_slc_par = iw_slc + '.par'
+            iw_slc_tops_par = iw_slc + '.tops_par'
+
+            e1 = os.path.isfile(iw_slc)
+            e2 = os.path.isfile(iw_slc_par)
+            e3 = os.path.isfile(iw_slc_tops_par)
+
+            if not (e1 and e2 and e3):
+                error_date[i].append(date)
+
+    if error_date:
+        for key in error_date.keys():
+            for date in error_date[key]:
+                print(f'No slc or slc_par or tops_par for {date} sub_swath {key}')
+        sys.exit('\nPlease check it.')
+
+    # check rslc_dir
+    if not os.path.isdir(rslc_dir):
+        os.mkdir(rslc_dir)
 
     # copy reference iw slc to rslc_dir for deramp
     m_date = ref_slc
@@ -321,7 +342,6 @@ def main():
 
     for s_date in s_dates:
         s_slc_dir = os.path.join(slc_dir, s_date)
-
         s_rslc_dir = os.path.join(rslc_dir, s_date)
 
         if not os.path.isdir(s_rslc_dir):
