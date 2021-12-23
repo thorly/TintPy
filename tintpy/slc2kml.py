@@ -69,6 +69,9 @@ def main():
         sys.exit(f"{slc_dir} does not exist.")
 
     slcs = glob.glob(slc_dir + '/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' + extension)
+    if not slcs:
+        sys.exit('No slc file endswith {}'.format(extension))
+
     slc_pars = [i + '.par' for i in slcs]
     for i, j in zip(slcs, slc_pars):
         if os.path.isfile(i) and os.path.isfile(j):
