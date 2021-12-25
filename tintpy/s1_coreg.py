@@ -289,7 +289,7 @@ def main():
             if not (e1 and e2 and e3):
                 error_date[i].append(date)
 
-    if error_date:
+    if error_date[list(error_date.keys())[0]]:
         for key in error_date.keys():
             for date in error_date[key]:
                 print(f'No slc or slc_par or tops_par for {date} sub_swath {key}')
@@ -299,7 +299,6 @@ def main():
     if not os.path.isdir(rslc_dir):
         os.mkdir(rslc_dir)
 
-    # copy reference iw slc to rslc_dir for deramp
     m_date = ref_slc
     m_slc_dir = os.path.join(slc_dir, m_date)
     m_rslc_dir = os.path.join(rslc_dir, m_date)
@@ -307,6 +306,7 @@ def main():
     if not os.path.isdir(m_rslc_dir):
         os.mkdir(m_rslc_dir)
 
+    # copy reference iw slc to rslc_dir for deramp
     if flag == 't':
         print('Copy reference iw slc to {}'.format(m_rslc_dir))
         for i in sub_swath:
@@ -326,7 +326,6 @@ def main():
     s_dates = dates.copy()
     s_dates.remove(m_date)
 
-    # make rdr dem
     geo_dir = os.path.join(rslc_dir, 'geo')
 
     if os.path.isdir(geo_dir):
@@ -334,8 +333,10 @@ def main():
 
     os.mkdir(geo_dir)
 
+    # mosaic iw slc for m_date
     m_slc, m_slc_par = slc_mosaic(m_slc_dir, sub_swath, pol, rlks, alks, geo_dir)
 
+    # make rdc dem
     rdc_dem = make_rdc_dem(m_slc, m_slc_par, dem, dem_par, rlks, alks, geo_dir)
 
     copy_ref_flag = True
@@ -349,6 +350,7 @@ def main():
 
         os.chdir(s_rslc_dir)
 
+        # write tab files
         s_iw_slcs = []
         m_iw_slcs = []
         s_iw_rslcs = []
@@ -366,9 +368,26 @@ def main():
         write_tab(m_iw_slcs, 'slc_tab_m')
         write_tab(s_iw_rslcs, 'rslc_tab')
 
+        # run coregistration
         call_str = f"S1_coreg_TOPS slc_tab_m {m_date} slc_tab_s {s_date} rslc_tab {rdc_dem} {rlks} {alks} - - 0.7 0.001 0.7 1"
         os.system(call_str)
 
+        # filter three times to check coregistration quality
+        pair = m_date + '_' + s_date
+        diff_par = pair + '.diff_par'
+        width = read_gamma_par(diff_par, 'range_samp_1:')
+
+        call_str = f"adf {pair}.diff {pair}.adf.diff1 {pair}.adf.cc1 {width} 0.3 64"
+        os.system(call_str)
+        call_str = f"adf {pair}.adf.diff1 {pair}.adf.diff2 {pair}.adf.cc2 {width} 0.3 32"
+        os.system(call_str)
+        call_str = f"adf {pair}.adf.diff2 {pair}.adf.diff {pair}.adf.cc {width} 0.3 16"
+        os.system(call_str)
+
+        call_str = f"rasmph_pwr {pair}.adf.diff {m_date}.rmli {width} 1 1 0 1 1 0.7 0.35"
+        os.system(call_str)
+
+        # just move m_date rslc to rslc_dir once
         if copy_ref_flag:
             dst_rslc = os.path.join(m_rslc_dir, m_date + '.rslc')
             dst_rslc_par = dst_rslc + '.par'
@@ -382,8 +401,9 @@ def main():
         save_files = []
         save_files.append(s_date + '.rslc')
         save_files.append(s_date + '.rslc.par')
-        save_files.append(m_date + '_' + s_date + '.coreg_quality')
-        save_files.append(m_date + '_' + s_date + '.diff.bmp')
+        save_files.append(pair + '.coreg_quality')
+        save_files.append(pair + '.diff.bmp')
+        save_files.append(pair + '.adf.diff.bmp')
 
         # save iw rslc for deramp
         if flag == 't':
@@ -394,7 +414,8 @@ def main():
                 save_files.append(iw_rslc)
                 save_files.append(iw_rslc_par)
                 save_files.append(iw_rslc_tops_par)
-
+        
+        # delete files
         for file in os.listdir(s_rslc_dir):
             if file not in save_files:
                 os.remove(file)
@@ -411,6 +432,8 @@ def main():
     # check coreg_quality
     quality_files = glob.glob(rslc_dir + '/*/*.coreg_quality')
     print_coreg_quality(quality_files)
+
+    print('\ndaz10000 is a relative indicator which cannot guarantee the coregistration is ok, you should check the adf.diff.bmp files!')
 
     print('\nAll done, enjoy it!\n')
 
