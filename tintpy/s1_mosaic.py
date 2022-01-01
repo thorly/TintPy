@@ -27,6 +27,7 @@ def cmdLineParse():
     parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
     parser.add_argument('-p', dest='pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
     parser.add_argument('-n', dest='num', help='number of slc used (default: -1, negative number for all)', type=int, default=-1)
+    parser.add_argument('-e', dest='slc_extension', type=str, default='slc', help='file extension for SLCs (defaults: slc)')
 
     inps = parser.parse_args()
 
@@ -65,7 +66,7 @@ def slc2bmp(slc, slc_par, rlks, alks, bmp):
         os.system(call_str)
 
 
-def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, out_dir):
+def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, extension, out_dir):
     """Calculate SLC mosaic of Sentinel-1 TOPS burst SLC data
 
     Args:
@@ -74,6 +75,7 @@ def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, out_dir):
         pol (str): polarization
         rlks (int): range looks
         alks (int): azimuth looks
+        extension (int): slc extension
         out_dir (str): output directory
 
     Returns:
@@ -84,13 +86,13 @@ def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, out_dir):
     slc_tab = os.path.join(date_slc_dir, 'slc_tab')
     with open(slc_tab, 'w+', encoding='utf-8') as f:
         for i in sub_swaths:
-            slc = os.path.join(date_slc_dir, f'{date}.iw{i}.{pol}.slc')
+            slc = os.path.join(date_slc_dir, f'{date}.iw{i}.{pol}.{extension}')
             slc_par = slc + '.par'
             tops_par = slc + '.tops_par'
             f.write(f'{slc} {slc_par} {tops_par}\n')
 
-    slc_out = os.path.join(out_dir, date + '.slc')
-    slc_par_out = os.path.join(out_dir, date + '.slc.par')
+    slc_out = os.path.join(out_dir, date + '.' + extension)
+    slc_par_out = slc_out + '.par'
 
     call_str = f"SLC_mosaic_S1_TOPS {slc_tab} {slc_out} {slc_par_out} {rlks} {alks}"
     os.system(call_str)
@@ -109,6 +111,7 @@ def main():
     pol = inps.pol
     rlks = inps.rlks
     alks = inps.alks
+    extension = inps.slc_extension
     slc_num = inps.num
 
     # check inputs
@@ -123,6 +126,9 @@ def main():
             pass
         else:
             sys.exit("Error sub_swath for two sub_swaths, it must be 1 2 or 2 3.")
+    
+    if extension.startswith('.'):
+        extension = extension[1:]
 
     # get all dates
     dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
@@ -140,7 +146,7 @@ def main():
             if not os.path.isdir(out_date_slc_dir):
                 os.mkdir(out_date_slc_dir)
 
-            slc, slc_par = slc_mosaic(date_slc_dir, sub_swath, pol, rlks, alks, out_date_slc_dir)
+            slc, slc_par = slc_mosaic(date_slc_dir, sub_swath, pol, rlks, alks, extension, out_date_slc_dir)
             slc2bmp(slc, slc_par, rlks, alks, slc + '.bmp')
 
         print('\nAll done, enjoy it!\n')
