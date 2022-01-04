@@ -11,7 +11,9 @@ import os
 import re
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 EXAMPLE = """Example:
   python3 s1_boi.py /ly/rslc /ly/BOI /ly/dem 20211229 1 -r 20 -a 5 -s 200 -t 60
@@ -191,6 +193,36 @@ def read_gamma_par(par_file, keyword):
     return value
 
 
+def mli_all(slc_tab, out_dir, rlks, alks):
+    """Calculate MLI images for a stack of SLCs
+
+    Args:
+        slc_tab (str): slc tab file including slc slc_par
+        out_dir (str): output directory
+        rlks (int): range looks
+        alks (int): azimuth looks
+    """
+    os.chdir(out_dir)
+    with open(slc_tab, 'r') as f:
+        for line in f.readlines():
+            if line.strip():
+                slc = line.strip().split()[0]
+                slc_par = line.strip().split()[1]
+
+                date = os.path.basename(slc)[0:8]
+
+                mli = date + '.rmli'
+                mli_par = mli + '.par'
+
+                call_str = f"multi_look {slc} {slc_par} {mli} {mli_par} {rlks} {alks}"
+                os.system(call_str)
+
+                width = read_gamma_par(mli_par, 'range_samples')
+
+                call_str = f"raspwr {mli} {width} 1 0 1 1 1. .35 1"
+                os.system(call_str)
+
+
 def write_gamma(data, out_file, file_type):
     """Write GAMMA format file
 
@@ -227,30 +259,22 @@ def read_gamma(file, lines, file_type):
     return data
 
 
-def make_lookup(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
+def make_lookup(mli, mli_par, dem, dem_par, out_dir):
     """make lookup table
 
     Args:
-        slc (str): slc
-        slc_par (str): slc par
+        mli (str): multi-looked slc
+        mli_par (str): multi-looked slc par
         dem (str): dem
         dem_par (str): dem par
-        rlks (int): range looks
-        alks (int): azimuth looks
         out_dir (str): output directory
 
     Returns:
-        str: multi-looked par
+        str: rdc dem file
     """
     os.chdir(out_dir)
 
-    date = os.path.basename(slc)[0:8]
-
-    mli = f"{date}.mli"
-    mli_par = mli + '.par'
-
-    call_str = f"multi_look {slc} {slc_par} {mli} {mli_par} {rlks} {alks}"
-    os.system(call_str)
+    date = os.path.basename(mli)[0:8]
 
     call_str = f"gc_map {mli_par} - {dem_par} {dem} dem_seg.par dem_seg lookup_table 1 1 sim_sar u v inc psi pix ls_map 8 1"
     os.system(call_str)
@@ -277,6 +301,15 @@ def make_lookup(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
     call_str = f"gc_map_fine lookup_table {width_utm_dem} {date}.diff_par lookup_table_fine 1"
     os.system(call_str)
 
+    length_mli = read_gamma_par(mli_par, 'azimuth_lines')
+    width_mli = read_gamma_par(mli_par, 'range_samples')
+
+    call_str = f"geocode lookup_table_fine dem_seg {width_utm_dem} {date}.dem {width_mli} {length_mli} 2 0"
+    os.system(call_str)
+
+    call_str = f"rashgt {date}.dem {mli} {width_mli} - - - - - 50 - - - {date}.dem.bmp"
+    os.system(call_str)
+
     mli_name = os.path.basename(mli)
 
     call_str = f"geocode_back {mli} {width_mli} lookup_table_fine {mli_name}.geo {width_utm_dem} - 2 0"
@@ -284,16 +317,6 @@ def make_lookup(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
 
     call_str = f"raspwr {mli_name}.geo {width_utm_dem} 1 0 1 1 1. .35 1 {mli_name}.geo.bmp"
     os.system(call_str)
-
-    length_mli = read_gamma_par(mli_par, 'azimuth_lines')
-
-    call_str = f"geocode lookup_table_fine dem_seg {width_utm_dem} {date}.dem {width_mli} {length_mli} 2 0"
-    os.system(call_str)
-
-    call_str = f"rashgt {date}.dem {mli} {width_mli} 1 1 0 1 1 160.0 1. .35 1 {date}.dem.bmp"
-    os.system(call_str)
-
-    return os.path.join(out_dir, mli_par)
 
 
 def del_file(file):
@@ -358,6 +381,9 @@ def get_overlap_poly(rslc_dir, date, sub_swath, pol, extension, rlks, alks, flag
     os.system(cmd_str)
 
     poly = np.loadtxt(poly_file, np.int16)
+
+    del_file(tab_file)
+    del_file(poly_file)
 
     return poly
 
@@ -425,7 +451,7 @@ def extract_burst_overlap(rslc_dir, sub_swath, pol, extension, rlks, alks, out_b
     return bursts_numbers[0:len(sub_swath)]
 
 
-def burst_overlap_ddi(bo_dir, pairs, sub_swath, pol, extension, bursts_numbers, rlks, alks, diff_dir):
+def burst_overlap_ddi(bo_dir, pairs, sub_swath, pol, extension, bursts_numbers, rlks, alks, ddi_dir):
     """Sentinel-1 burst overlap double-difference interferometry
 
     Args:
@@ -437,9 +463,9 @@ def burst_overlap_ddi(bo_dir, pairs, sub_swath, pol, extension, bursts_numbers, 
         bursts_numbers (list): bursts numbers for per sub_swath
         rlks (int): range looks
         alks (int): azimuth looks
-        diff_dir (str): directory for saving results
+        ddi_dir (str): directory for saving results
     """
-    os.chdir(diff_dir)
+    os.chdir(ddi_dir)
 
     for pair in pairs:
         m_date = pair[0:8]
@@ -525,7 +551,84 @@ def burst_overlap_ddi(bo_dir, pairs, sub_swath, pol, extension, bursts_numbers, 
                 os.system(cmd_str)
 
 
-def merge_data(diff_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, lines):
+def get_unit(rslc_dir, date, sub_swath, extension, pol):
+    """Get unit of transforming BOI displacement
+
+    Args:
+        rslc_dir (str): RSLC directory
+        date (str): date
+        sub_swath (list): sub_swath number
+        extension (str): slc extension
+        pol (str): polarization
+
+    Returns:
+        list: unit
+    """
+    unit = []
+
+    # using GAMMA command `af_SLC` to get it
+    Vs = 7180.5433
+
+    slc_par = os.path.join(rslc_dir, date, f"{date}.{extension}.par")
+
+    radar_frequency = float(read_gamma_par(slc_par, 'radar_frequency'))
+    light_speed = 299792458
+    wavelength = light_speed / radar_frequency
+
+    prf = float(read_gamma_par(slc_par, 'prf'))
+    Ts = 1 / prf
+
+    azimuth_pixel_spacing = float(read_gamma_par(slc_par, 'azimuth_pixel_spacing'))
+
+    for i in sub_swath:
+        iw_slc = os.path.join(rslc_dir, date, f'{date}.iw{i}.{pol}.{extension}')
+        iw_slc_par = iw_slc + '.par'
+        iw_slc_tops_par = iw_slc + '.tops_par'
+
+        burst_time1 = float(read_gamma_par(iw_slc_tops_par, 'burst_start_time_1'))
+        burst_time2 = float(read_gamma_par(iw_slc_tops_par, 'burst_start_time_2'))
+        Tc = burst_time2 - burst_time1
+
+        az_steering_rate = abs(float(read_gamma_par(iw_slc_tops_par, 'az_steering_rate')))
+        center_range = float(read_gamma_par(iw_slc_par, 'center_range_slc'))
+
+        Ka = -2 * Vs * Vs / wavelength / center_range
+
+        Ks = 2 * np.deg2rad(az_steering_rate) * Vs / wavelength
+
+        Kt = Ka * Ks / (Ka - Ks)
+
+        fovl = abs(Kt) * Tc
+
+        u = 1 / (2 * np.pi * fovl * Ts / azimuth_pixel_spacing)
+
+        unit.append(u)
+
+    return unit
+
+
+def draw_img(data, out_file, cmap='jet'):
+    """Draw image from array
+
+    Args:
+        data (array): numpy array
+        out_file (str): output file name
+        cmap (str, optional): colormap. Defaults to 'jet'.
+    """
+    plt.figure()
+    ax = plt.gca()
+    ax.axis('off')
+
+    data[data==0.0] = np.nan
+    im = ax.imshow(data, cmap=cmap)
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="3%", pad=0.05)
+    plt.colorbar(im, cax=cax)
+    plt.savefig(out_file, bbox_inches='tight', dpi=200)
+
+
+def merge_data(diff_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, lines, unit, out_dir):
     """Merge overlap region into one file for phase and cc
 
     Args:
@@ -536,8 +639,10 @@ def merge_data(diff_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, line
         azi_poly (array): azimuth overlap polygons
         width (int): width for merged file
         lines (int): lines for merged file
+        unit (list): unit of transforming BOI displacement
+        out_dir (str): directory of saving merged resluts
     """
-    merged_phase = np.ones((lines, width), dtype='float32') * 99999
+    merged_phase = np.zeros((lines, width), dtype='float32')
     merged_cc = merged_phase.copy()
 
     os.chdir(diff_dir)
@@ -557,17 +662,50 @@ def merge_data(diff_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, line
 
                 phase_file = f"{pair}.iw{i}.{j}.diff20.phase"
                 phase = read_gamma(phase_file, line_sm, 'float32')
-                merged_phase[line_start:line_start + line_sm, range_start:range_start + width_sm] = phase
+                merged_phase[line_start:line_start + line_sm, range_start:range_start + width_sm] = phase * unit[index]
 
                 cc_file = f"{pair}.iw{i}.{j}.diff20.adf.cc"
                 cc = read_gamma(cc_file, line_sm, 'float32')
                 merged_cc[line_start:line_start + line_sm, range_start:range_start + width_sm] = cc
 
-        merged_phase_file = f"{pair}.boi.disp"
+        merged_phase_file = os.path.join(out_dir, f"{pair}.boi.disp")
         write_gamma(merged_phase, merged_phase_file, 'float32')
+        draw_img(merged_phase, merged_phase_file + '.png')
 
-        merged_cc_file = f"{pair}.boi.cc"
+        merged_cc_file = os.path.join(out_dir, f"{pair}.boi.cc")
         write_gamma(merged_cc, merged_cc_file, 'float32')
+        draw_img(merged_cc, merged_cc_file + '.png', cmap='gray')
+
+def create_off(rslc_dir, pairs, rlks, alks, extension, out_dir):
+    """Create off par for MintPy
+
+    Args:
+        rslc_dir (str): RSLC directory
+        pairs (list): ifg pairs
+        rlks (int): range looks
+        alks (int): azimuth looks
+        extension (str): slc extension
+        out_dir (str): output directory
+    """
+    os.chdir(out_dir)
+
+    for pair in pairs:
+        m_date = pair[0:8]
+        s_date = pair[9:17]
+
+        m_rslc = os.path.join(rslc_dir, m_date, m_date + '.' + extension)
+        m_rslc_par = m_rslc + '.par'
+
+        s_rslc = os.path.join(rslc_dir, s_date, s_date + '.' + extension)
+        s_rslc_par = s_rslc + '.par'
+
+        call_str = f'echo "{pair}\\n\\n\\n\\n\\n\\n\\n" > off_par.in'
+        os.system(call_str)
+
+        call_str = f"create_offset {m_rslc_par} {s_rslc_par} {pair}.off 1 {rlks} {alks} < off_par.in"
+        os.system(call_str)
+
+        del_file('off_par.in')
 
 
 def main():
@@ -641,22 +779,30 @@ def main():
                 print(f'No slc or slc_par or tops_par for {date} sub_swath {key}')
         sys.exit('\nPlease check it.')
 
+    # multi-look
+    mli_dir = os.path.join(out_dir, 'mli')
+    mk_dir(mli_dir)
+
+    slc_tab = os.path.join(mli_dir, 'slc_tab')
+    mk_tab(rslc_dir, slc_tab, slc_extension)
+
+    mli_all(slc_tab, mli_dir, rlks, alks)
+
     # make lookup table
     geo_dir = os.path.join(out_dir, 'geo')
     mk_dir(geo_dir)
 
-    m_rslc = os.path.join(rslc_dir, ref_slc, f"{ref_slc}.{slc_extension}")
-    m_rslc_par = m_rslc + '.par'
-    mli_par = make_lookup(m_rslc, m_rslc_par, dem, dem_par, rlks, alks, geo_dir)
+    sm_mli = os.path.join(mli_dir, ref_slc + '.rmli')
+    sm_mli_par = sm_mli + '.par'
+
+    make_lookup(sm_mli, sm_mli_par, dem, dem_par, geo_dir)
 
     # select pairs
     base_dir = os.path.join(out_dir, 'base_calc')
     mk_dir(base_dir)
 
-    slc_tab = os.path.join(base_dir, 'slc_tab')
-    mk_tab(rslc_dir, slc_tab, slc_extension)
-
-    pairs = select_pairs_sbas(slc_tab, m_rslc_par, max_sb, max_tb, base_dir)
+    sm_rslc_par = os.path.join(rslc_dir, ref_slc, f"{ref_slc}.{slc_extension}.par")
+    pairs = select_pairs_sbas(slc_tab, sm_rslc_par, max_sb, max_tb, base_dir)
 
     # extract overlap area
     bo_dir = os.path.join(out_dir, 'burst_overlap')
@@ -665,17 +811,24 @@ def main():
     bursts_numbers = extract_burst_overlap(rslc_dir, sub_swath, pol, slc_extension, rlks, alks, bo_dir)
 
     # burst overlap double-difference interferometry
-    diff_dir = os.path.join(out_dir, 'diff')
-    mk_dir(diff_dir)
+    ddi_dir = os.path.join(out_dir, 'ddi')
+    mk_dir(ddi_dir)
 
-    burst_overlap_ddi(bo_dir, pairs, sub_swath, pol, slc_extension, bursts_numbers, rlks, alks, diff_dir)
+    burst_overlap_ddi(bo_dir, pairs, sub_swath, pol, slc_extension, bursts_numbers, rlks, alks, ddi_dir)
 
     # merge data
-    azi_poly = get_overlap_poly(rslc_dir, ref_slc, sub_swath, pol, slc_extension, rlks, alks, 1, diff_dir)
-    width = int(read_gamma_par(mli_par, 'range_samples'))
-    lines = int(read_gamma_par(mli_par, 'azimuth_lines'))
+    merge_dir = os.path.join(out_dir, 'merge')
+    mk_dir(merge_dir)
 
-    merge_data(diff_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, lines)
+    azi_poly = get_overlap_poly(rslc_dir, ref_slc, sub_swath, pol, slc_extension, rlks, alks, 1, merge_dir)
+    width = int(read_gamma_par(sm_mli_par, 'range_samples'))
+    lines = int(read_gamma_par(sm_mli_par, 'azimuth_lines'))
+    unit = get_unit(rslc_dir, ref_slc, sub_swath, slc_extension, pol)
+
+    merge_data(ddi_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, lines, unit, merge_dir)
+
+    # create off file
+    create_off(rslc_dir, pairs, rlks, alks, slc_extension, merge_dir)
 
     print("\nAll done, enjoy it!\n")
 
