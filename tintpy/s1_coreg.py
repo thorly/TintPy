@@ -31,7 +31,7 @@ def cmd_line_parser():
     parser.add_argument('-r', dest='rlks', help='range looks', type=int, required=True)
     parser.add_argument('-a', dest='alks', help='azimuth looks', type=int, required=True)
     parser.add_argument('-p', dest='pol', help='polarization(defaults: vv)', choices=['vv', 'vh'], default='vv')
-    parser.add_argument('-f', dest='deramp_flag', choices=['t', 'T', 'f', 'F'], help='flag for deramp later (t for YES, f for No, defaults: f)', default='f')
+    parser.add_argument('-f', dest='flag', choices=['t', 'T', 'f', 'F'], help='flag for saving iw*.rslc (t for YES, f for No, defaults: f)', default='f')
     inps = parser.parse_args()
 
     return inps
@@ -241,7 +241,7 @@ def main():
     rlks = inps.rlks
     alks = inps.alks
     ref_slc = inps.ref_slc
-    flag = inps.deramp_flag.lower()
+    flag = inps.flag.lower()
 
     # check slc_dir
     if not os.path.isdir(slc_dir):
