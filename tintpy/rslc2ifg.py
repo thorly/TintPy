@@ -612,10 +612,7 @@ def main():
         s_date = pair[9:17]
 
         m_mli = os.path.join(mli_dir, m_date + '.rmli')
-        m_mli_par = m_mli + '.par'
-
         s_mli = os.path.join(mli_dir, s_date + '.rmli')
-        s_mli_par = s_mli + '.par'
 
         m_rslc = os.path.join(rslc_dir, m_date, m_date + slc_extension)
         m_rslc_par = m_rslc + '.par'
