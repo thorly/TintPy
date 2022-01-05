@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from subprocess import Popen, PIPE
+
 EXAMPLE = """Example:
   python3 s1_boi.py /ly/rslc /ly/BOI /ly/dem 20211229 1 -r 20 -a 5 -s 200 -t 60
   python3 s1_boi.py /ly/rslc /ly/BOI /ly/dem 20211229 1 2 -r 20 -a 5 -s 200 -t 60
@@ -24,10 +26,8 @@ EXAMPLE = """Example:
 
 def cmdline_parser():
     parser = argparse.ArgumentParser(
-        description=
-        'Sentinel-1 burst overlap double-difference interferometry from RSLCs using GAMMA.',
-        formatter_class=argparse.RawTextHelpFormatter,
-        epilog=EXAMPLE)
+        description='Sentinel-1 burst overlap double-difference interferometry from RSLCs using GAMMA.',
+        formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
     parser.add_argument('rslc_dir',
                         help='RSLCs directory (iw*.**.rslc and *.rslc)')
@@ -83,8 +83,7 @@ def mk_tab(slc_dir, slc_tab, slc_extension):
         slc_tab (str): tab file
         slc_extension (str): slc extension
     """
-    dates = sorted(
-        [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+    dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
     with open(slc_tab, 'w+', encoding='utf-8') as f:
         for date in dates:
             slc = os.path.join(slc_dir, date, date + '.' + slc_extension)
@@ -105,8 +104,7 @@ def write_tab(rslc_dir, date, sub_swath, pol, extension, tab_file):
     """
     with open(tab_file, 'w+', encoding='utf-8') as f:
         for i in sub_swath:
-            iw_slc = os.path.join(rslc_dir, date,
-                                  f"{date}.iw{i}.{pol}.{extension}")
+            iw_slc = os.path.join(rslc_dir, date, f"{date}.iw{i}.{pol}.{extension}")
             iw_slc_par = iw_slc + '.par'
             iw_slc_tops_par = iw_slc + '.tops_par'
             f.write(f"{iw_slc} {iw_slc_par} {iw_slc_tops_par}\n")
@@ -382,9 +380,6 @@ def get_overlap_poly(rslc_dir, date, sub_swath, pol, extension, rlks, alks, flag
 
     poly = np.loadtxt(poly_file, np.int16)
 
-    del_file(tab_file)
-    del_file(poly_file)
-
     return poly
 
 
@@ -438,11 +433,9 @@ def extract_burst_overlap(rslc_dir, sub_swath, pol, extension, rlks, alks, out_b
                     if k == 2:
                         starting_line = j * lines_per_burst
 
-                    slc_copy = os.path.join(
-                        out_date_dir,
-                        f"{date}.iw{i}.{pol}.{extension}.{j}.{k}")
+                    slc_copy = os.path.join(out_date_dir, f"{date}.iw{i}.{pol}.{extension}.{j}.{k}")
 
-                    cmd_str = f"SLC_copy {iw_slc} {iw_slc_par} {slc_copy} {slc_copy}.par - 1. 0 {range_samples} {starting_line} {lines_overlap}"
+                    cmd_str = f"SLC_copy {iw_slc} {iw_slc_par} {slc_copy} {slc_copy}.par - 1. 1 {range_samples} {starting_line} {lines_overlap}"
                     os.system(cmd_str)
 
                     cmd_str = f"rasSLC {slc_copy} {range_samples} 1 0 {rlks} {alks} 1. .35"
@@ -671,10 +664,12 @@ def merge_data(diff_dir, pairs, sub_swath, bursts_numbers, azi_poly, width, line
         merged_phase_file = os.path.join(out_dir, f"{pair}.boi.disp")
         write_gamma(merged_phase, merged_phase_file, 'float32')
         draw_img(merged_phase, merged_phase_file + '.png')
+        merged_phase = None
 
         merged_cc_file = os.path.join(out_dir, f"{pair}.boi.cc")
         write_gamma(merged_cc, merged_cc_file, 'float32')
-        draw_img(merged_cc, merged_cc_file + '.png', cmap='gray')
+        draw_img(merged_cc, merged_cc_file + '.png', cmap='gray_r')
+        merged_cc = None
 
 def create_off(rslc_dir, pairs, rlks, alks, extension, out_dir):
     """Create off par for MintPy
@@ -706,6 +701,53 @@ def create_off(rslc_dir, pairs, rlks, alks, extension, out_dir):
         os.system(call_str)
 
         del_file('off_par.in')
+
+
+def check_dem_size(slc_par, dem_par):
+    """Check whether the dem completely covers the research area
+
+    Args:
+        slc_par (str): SLC parameter file
+        dem_par (str): dem parameter file
+    """
+    # calc lon and lat of dem
+    width = int(read_gamma_par(dem_par, 'width'))
+    nlines = int(read_gamma_par(dem_par, 'nlines'))
+    corner_lat = float(read_gamma_par(dem_par, 'corner_lat'))
+    corner_lon = float(read_gamma_par(dem_par, 'corner_lon'))
+    post_lat = float(read_gamma_par(dem_par, 'post_lat'))
+    post_lon = float(read_gamma_par(dem_par, 'post_lon'))
+
+    north = corner_lat
+    south = north + post_lat * nlines
+    west = corner_lon
+    east = west + post_lon * width
+
+    print(f"longitude and latitude of DEM: {west:>9}{east:>9}{south:>9}{north:>9}")
+
+    # calc lon and lat of slc
+    out = Popen(f"SLC_corners {slc_par}", shell=True, stdout=PIPE)
+    out_info = out.stdout.readlines()
+    for line in out_info:
+        line = str(line, 'utf-8')
+        if "upper left corner" in line:
+            sp = line.split()
+            min_lon, max_lat = float(sp[-1]), float(sp[-2])
+        if "lower right corner" in line:
+            sp = line.split()
+            max_lon, min_lat = float(sp[-1]), float(sp[-2])
+
+    print(f"longitude and latitude of SLC: {min_lon:>9}{max_lon:>9}{min_lat:>9}{max_lat:>9}")
+
+    # check
+    e1 = (min_lon >= west)
+    e2 = (max_lon <= east)
+    e3 = (min_lat >= south)
+    e4 = (max_lat <= north)
+
+    if not (e1 and e2 and e3 and e4):
+        print("SLC out of DEM coverage, please remake DEM!")
+        sys.exit()
 
 
 def main():
@@ -779,6 +821,10 @@ def main():
                 print(f'No slc or slc_par or tops_par for {date} sub_swath {key}')
         sys.exit('\nPlease check it.')
 
+    # check dem
+    sm_rslc_par = os.path.join(rslc_dir, ref_slc, f"{ref_slc}.{slc_extension}.par")
+    check_dem_size(sm_rslc_par, dem_par)
+
     # multi-look
     mli_dir = os.path.join(out_dir, 'mli')
     mk_dir(mli_dir)
@@ -801,7 +847,6 @@ def main():
     base_dir = os.path.join(out_dir, 'base_calc')
     mk_dir(base_dir)
 
-    sm_rslc_par = os.path.join(rslc_dir, ref_slc, f"{ref_slc}.{slc_extension}.par")
     pairs = select_pairs_sbas(slc_tab, sm_rslc_par, max_sb, max_tb, base_dir)
 
     # extract overlap area
