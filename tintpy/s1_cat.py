@@ -390,12 +390,12 @@ def cat_three_slc(date_slc_dirs, sub_swath, pol, rlks, alks, out_dir):
 
     # first case: slc1 or slc2 is middle slc
     if middle_time in [start_time1, start_time2]:
-        cat_two_slc(date_slc_dirs[0], date_slc_dirs[1], sub_swath, pol, rlks, alks, out_dir)
-        cat_two_slc(date_slc_dirs[2], tmp_dir, sub_swath, pol, rlks, alks, out_dir)
+        cat_two_slc([date_slc_dirs[0], date_slc_dirs[1]], sub_swath, pol, rlks, alks, out_dir)
+        cat_two_slc([date_slc_dirs[2], tmp_dir], sub_swath, pol, rlks, alks, out_dir)
     # second case: slc3 is middle slc
     else:
-        cat_two_slc(date_slc_dirs[0], date_slc_dirs[2], sub_swath, pol, rlks, alks, out_dir)
-        cat_two_slc(date_slc_dirs[1], tmp_dir, sub_swath, pol, rlks, alks, out_dir)
+        cat_two_slc([date_slc_dirs[0], date_slc_dirs[2]], sub_swath, pol, rlks, alks, out_dir)
+        cat_two_slc([date_slc_dirs[1], tmp_dir], sub_swath, pol, rlks, alks, out_dir)
 
     # delete tmp_dir
     shutil.rmtree(tmp_dir)
