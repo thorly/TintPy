@@ -1,0 +1,410 @@
+#! /bin/csh -ef
+echo "*** S1_poly_overlap: Script to determine polygons for overlap regions in Sentinel-1 TOPS data ***"
+echo "*** Copyright 2019 Gamma Remote Sensing, v1.4 22-Mar-2019 uw/cm ***"
+echo ""
+
+if ($#argv < 4)then
+  echo "usage: S1_poly_overlap <SLC_tab> <rlks> <azlks> <poly> [overlap_type]"
+  echo "       SLC_tab       (input) 3 column list of TOPS burst SLC (SLC, SLC_par, TOPS_par; row order IW1, IW2, IW3)"
+  echo "       rlks          (input) range looks to consider (default=1 (SLC))"
+  echo "       azlks         (input) azimuth looks to consider (default=1 (SLC))"
+  echo "       poly          (output) polygon file for overlap regions (ASCII)"
+  echo "       overlap_type  overlap type selection: default = 1: azimuth overlap,  2: range overlap)"
+  echo " "
+  exit
+endif
+
+# History:
+# 26-Jan-2015: checked that SLC and TOPS_par in RSLC2_tab are correctly used
+#              only the burst SLC name but not the burst SLC parameter filename or TOPS_par are used
+#              --> correct even with corrupt TOPS_par in RSLC2_tab
+# 24-Nov-2015: updated to support also range overlap regions; checked
+# 21-Nov-2016: adapted program for EWS SLC coregistration (with up to 5 sub-swaths / resp. lines in the SLC_tab)
+# 28-Nov-2016: adapted range overlap method for EWS SLC coregistration (with up to 5 sub-swaths / resp. lines in the SLC_tab)
+# 22-Mar-2019: script description update
+
+# read input parameters from command line
+set RSLC1_tab = $1
+set rlks = $2
+set azlks = $3
+set poly = $4
+
+set overlap_type = "1"
+if ($#argv >= 5) set overlap_type = $5
+
+if (  "$overlap_type" == "1" )then
+  echo "generate polygons for azimuth overlaps"
+else
+  if (  "$overlap_type" == "2" )then
+    echo "generate polygons for range overlaps"
+  else
+    echo "ERROR: overlap_type    $overlap_type     not supported"
+    exit  
+  endif
+endif
+
+###################################################################################################################
+
+# determine number of rows of RSLC1_tab file
+set tmp=`echo "$RSLC1_tab"  | awk '(NR>=1){print NF}' $1 `
+set nrows=`echo "$tmp" | awk '(NR==1){print NF}'`
+
+# determine number of colums of RSLC1_tab file
+set ncols=`echo "$RSLC1_tab"  | awk '(NR==1){print NF}' $1`
+echo "$RSLC1_tab nrows: $nrows   ncols: $ncols"
+
+# read burst SLC filenames from first line of $RSLC1_tab
+set RSLC1_IW1_slc=`awk '(NR==1){print $1}' $RSLC1_tab`
+set RSLC1_IW1_par=`awk '(NR==1){print $2}' $RSLC1_tab`
+set RSLC1_IW1_TOPS=`awk '(NR==1){print $3}' $RSLC1_tab`
+echo "RSLC1_IW1: $RSLC1_IW1_slc $RSLC1_IW1_par $RSLC1_IW1_TOPS"
+
+# read burst SLC filenames from second line of $RSLC1_tab
+if ( "$nrows" > "1" ) then
+  set RSLC1_IW2_slc=`awk '(NR==2){print $1}' $RSLC1_tab`
+  set RSLC1_IW2_par=`awk '(NR==2){print $2}' $RSLC1_tab`
+  set RSLC1_IW2_TOPS=`awk '(NR==2){print $3}' $RSLC1_tab`
+  echo "RSLC1_IW2: $RSLC1_IW2_slc $RSLC1_IW2_par $RSLC1_IW2_TOPS"
+endif
+
+# read burst SLC filenames from third line of $RSLC1_tab
+if ( "$nrows" > "2" ) then
+  set RSLC1_IW3_slc=`awk '(NR==3){print $1}' $RSLC1_tab`
+  set RSLC1_IW3_par=`awk '(NR==3){print $2}' $RSLC1_tab`
+  set RSLC1_IW3_TOPS=`awk '(NR==3){print $3}' $RSLC1_tab`
+  echo "RSLC1_IW3: $RSLC1_IW3_slc $RSLC1_IW3_par $RSLC1_IW3_TOPS"
+endif
+
+# read burst SLC filenames from forth line of $RSLC1_tab
+if ( "$nrows" > "3" ) then
+  set RSLC1_IW4_slc=`awk '(NR==4){print $1}' $RSLC1_tab`
+  set RSLC1_IW4_par=`awk '(NR==4){print $2}' $RSLC1_tab`
+  set RSLC1_IW4_TOPS=`awk '(NR==4){print $3}' $RSLC1_tab`
+  echo "RSLC1_IW4: $RSLC1_IW4_slc $RSLC1_IW4_par $RSLC1_IW4_TOPS"
+endif
+
+# read burst SLC filenames from fifth line of $RSLC1_tab
+if ( "$nrows" > "4" ) then
+  set RSLC1_IW5_slc=`awk '(NR==5){print $1}' $RSLC1_tab`
+  set RSLC1_IW5_par=`awk '(NR==5){print $2}' $RSLC1_tab`
+  set RSLC1_IW5_TOPS=`awk '(NR==5){print $3}' $RSLC1_tab`
+  echo "RSLC1_IW5: $RSLC1_IW5_slc $RSLC1_IW5_par $RSLC1_IW5_TOPS"
+endif
+
+
+###################################################################################################################
+
+# set parameters used for all sub-swaths
+set azimuth_line_time = `awk '$1 == "azimuth_line_time:" {print $2}' $RSLC1_IW1_par`      
+set range_pixel_spacing = `awk '$1 == "range_pixel_spacing:" {print $2}' $RSLC1_IW1_par`      
+echo "azimuth_line_time: $azimuth_line_time"
+echo "range_pixel_spacing: $range_pixel_spacing"
+
+# determine start time (over all sub-swaths)
+set IW1_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW1_TOPS`      
+set start_time = $IW1_burst_start_time_1       
+set IW1_k = "0"
+
+if ( "$nrows" > "1" ) then
+  set IW2_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW2_TOPS` 
+  set rows_offset = `echo "$IW2_burst_start_time_1 $start_time $azimuth_line_time" | awk '{printf "%d", ($1-$2)/$3}'`
+  set IW2_k = "0"
+  if ( "$rows_offset" < "0" ) then
+    set start_time =  $IW2_burst_start_time_1
+    set IW2_k = "1"
+  endif
+endif
+
+if ( "$nrows" > "2" ) then
+  set IW3_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW3_TOPS`      
+  set rows_offset = `echo "$IW3_burst_start_time_1 $start_time $azimuth_line_time" | awk '{printf "%d", ($1-$2)/$3}'`
+  set IW3_k = "0"
+  if ( "$rows_offset" < "0" ) then
+    set start_time =  "$IW3_burst_start_time_1"
+    set IW3_k = "1"
+  endif
+endif
+if ( "$nrows" > "3" ) then
+  set IW4_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW4_TOPS`      
+  set rows_offset = `echo "$IW4_burst_start_time_1 $start_time $azimuth_line_time" | awk '{printf "%d", ($1-$2)/$3}'`
+  set IW4_k = "0"
+  if ( "$rows_offset" < "0" ) then
+    set start_time =  $IW4_burst_start_time_1
+    set IW4_k = "1"
+  endif
+endif
+if ( "$nrows" > "4" ) then
+  set IW5_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW5_TOPS`      
+  set rows_offset = `echo "$IW5_burst_start_time_1 $start_time $azimuth_line_time" | awk '{printf "%d", ($1-$2)/$3}'`
+  set IW5_k = "0"
+  if ( "$rows_offset" < "0" ) then
+    set start_time =  $IW5_burst_start_time_1
+    set IW5_k = "1"
+  endif
+endif
+echo "start_time: $start_time"
+
+
+# determine for each sub-swath: lirst/lat valid line/sample, offset between bursts (all in MLI pixels), k
+set IW1_lines_per_burst = `awk '$1 == "lines_per_burst:" {print $2}' $RSLC1_IW1_TOPS`  
+set IW1_range_samples = `awk '$1 == "range_samples:" {print $2}' $RSLC1_IW1_par` 
+set IW1_number_of_bursts = `awk '$1 == "number_of_bursts:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_burst_start_time_2 = `awk '$1 == "burst_start_time_2:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_first_valid_line = `awk '$1 == "first_valid_line_1:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_last_valid_line = `awk '$1 == "last_valid_line_1:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_near_range_slc = `awk '$1 == "near_range_slc:" {print $2}' $RSLC1_IW1_par`	
+set IW1_first_valid_sample = `awk '$1 == "first_valid_sample_1:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_last_valid_sample = `awk '$1 == "last_valid_sample_1:" {print $2}' $RSLC1_IW1_TOPS`      
+set IW1_start_line  = `echo "$IW1_burst_start_time_1 $start_time $azimuth_line_time $IW1_first_valid_line $azlks" | awk '{printf "%d", 0.5+(($1-$2)/$3)/$5}'`
+set IW1_stop_line  = `echo "$IW1_burst_start_time_1 $start_time $azimuth_line_time $IW1_last_valid_line $azlks $IW1_lines_per_burst" | awk '{printf "%d", 0.5+($6+($1-$2)/$3)/$5}'`
+set IW1_start_sample  = "1"
+set IW1_stop_sample  = `echo "$IW1_range_samples $rlks" | awk '{printf "%d", 0.5+($1/$2)}'` 
+echo "IW1_valid_lines $IW1_start_line to $IW1_stop_line  IW1_valid_samples: $IW1_start_sample to $IW1_stop_sample"
+set IW1_rows_offset = `echo "$IW1_burst_start_time_1  $IW1_burst_start_time_2 $azimuth_line_time $azlks" | awk '{printf "%f", ($2-$1)/$3/$4}'`
+echo "IW1_rows_offset: $IW1_rows_offset"
+
+if ( "$nrows" > "1" ) then
+  set IW2_lines_per_burst = `awk '$1 == "lines_per_burst:" {print $2}' $RSLC1_IW2_TOPS` 
+  set IW2_range_samples = `awk '$1 == "range_samples:" {print $2}' $RSLC1_IW2_par` 
+  set IW2_number_of_bursts = `awk '$1 == "number_of_bursts:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_burst_start_time_2 = `awk '$1 == "burst_start_time_2:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_first_valid_line = `awk '$1 == "first_valid_line_1:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_last_valid_line = `awk '$1 == "last_valid_line_1:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_near_range_slc = `awk '$1 == "near_range_slc:" {print $2}' $RSLC1_IW2_par`	
+  set IW2_first_valid_sample = `awk '$1 == "first_valid_sample_1:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_last_valid_sample = `awk '$1 == "last_valid_sample_1:" {print $2}' $RSLC1_IW2_TOPS`      
+  set IW2_start_line  = `echo "$IW2_burst_start_time_1 $start_time $azimuth_line_time $IW2_first_valid_line $azlks" | awk '{printf "%d", 0.5+(($1-$2)/$3)/$5}'`
+  set IW2_stop_line  = `echo "$IW2_burst_start_time_1 $start_time $azimuth_line_time $IW2_last_valid_line $azlks $IW2_lines_per_burst" | awk '{printf "%d", 0.5+($6+($1-$2)/$3)/$5}'`
+  set IW2_start_sample  = `echo "$IW2_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW2_first_valid_sample $rlks" | awk '{printf "%d", 0.5+(($1-$2)/$3)/$5}'` 
+  set IW2_stop_sample  = `echo "$IW2_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW2_range_samples $rlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'` 
+  echo "IW2_valid_lines $IW2_start_line to $IW2_stop_line  IW2_valid_samples: $IW2_start_sample to $IW2_stop_sample"
+  set IW2_rows_offset = `echo "$IW2_burst_start_time_1  $IW2_burst_start_time_2 $azimuth_line_time $azlks" | awk '{printf "%f", ($2-$1)/$3/$4}'`
+  echo "IW2_rows_offset: $IW2_rows_offset"
+endif
+if ( "$nrows" > "2" ) then
+  set IW3_lines_per_burst = `awk '$1 == "lines_per_burst:" {print $2}' $RSLC1_IW3_TOPS` 
+  set IW3_range_samples = `awk '$1 == "range_samples:" {print $2}' $RSLC1_IW3_par` 
+  set IW3_number_of_bursts = `awk '$1 == "number_of_bursts:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_burst_start_time_2 = `awk '$1 == "burst_start_time_2:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_first_valid_line = `awk '$1 == "first_valid_line_1:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_last_valid_line = `awk '$1 == "last_valid_line_1:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_near_range_slc = `awk '$1 == "near_range_slc:" {print $2}' $RSLC1_IW3_par`	
+  set IW3_first_valid_sample = `awk '$1 == "first_valid_sample_1:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_last_valid_sample = `awk '$1 == "last_valid_sample_1:" {print $2}' $RSLC1_IW3_TOPS`      
+  set IW3_start_line  = `echo "$IW3_burst_start_time_1 $start_time $azimuth_line_time $IW3_first_valid_line $azlks" | awk '{printf "%d", 0.5+(($1-$2)/$3)/$5}'`
+  set IW3_stop_line  = `echo "$IW3_burst_start_time_1 $start_time $azimuth_line_time $IW3_last_valid_line $azlks $IW3_lines_per_burst" | awk '{printf "%d", 0.5+($6+($1-$2)/$3)/$5}'`
+  set IW3_start_sample  = `echo "$IW3_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW3_first_valid_sample $rlks" | awk '{printf "%d", 0.5+(($1-$2)/$3)/$5}'` 
+  set IW3_stop_sample  = `echo "$IW3_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW3_range_samples $rlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'` 
+  echo "IW3_valid_lines $IW3_start_line to $IW3_stop_line  IW3_valid_samples: $IW3_start_sample to $IW3_stop_sample"
+  set IW3_rows_offset = `echo "$IW3_burst_start_time_1  $IW3_burst_start_time_2 $azimuth_line_time $azlks" | awk '{printf "%f", ($2-$1)/$3/$4}'`
+  echo "IW3_rows_offset: $IW3_rows_offset"
+endif
+if ( "$nrows" > "3" ) then
+  set IW4_lines_per_burst = `awk '$1 == "lines_per_burst:" {print $2}' $RSLC1_IW4_TOPS` 
+  set IW4_number_of_bursts = `awk '$1 == "number_of_bursts:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_burst_start_time_2 = `awk '$1 == "burst_start_time_2:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_first_valid_line = `awk '$1 == "first_valid_line_1:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_last_valid_line = `awk '$1 == "last_valid_line_1:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_near_range_slc = `awk '$1 == "near_range_slc:" {print $2}' $RSLC1_IW4_par`	
+  set IW4_first_valid_sample = `awk '$1 == "first_valid_sample_1:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_last_valid_sample = `awk '$1 == "last_valid_sample_1:" {print $2}' $RSLC1_IW4_TOPS`      
+  set IW4_start_line  = `echo "$IW4_burst_start_time_1 $start_time $azimuth_line_time $IW4_first_valid_line $azlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'`
+  set IW4_stop_line  = `echo "$IW4_burst_start_time_1 $start_time $azimuth_line_time $IW4_last_valid_line $azlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'`
+  set IW4_start_sample  = `echo "$IW4_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW4_first_valid_sample $rlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'` 
+  set IW4_stop_sample  = `echo "$IW4_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW4_last_valid_sample $rlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'` 
+  echo "IW4_valid_lines $IW4_start_line to $IW4_stop_line  IW4_valid_samples: $IW4_start_sample to $IW4_stop_sample"
+  set IW4_rows_offset = `echo "$IW4_burst_start_time_1  $IW4_burst_start_time_2 $azimuth_line_time $azlks" | awk '{printf "%f", ($2-$1)/$3/$4}'`
+  echo "IW4_rows_offset: $IW4_rows_offset"
+endif
+if ( "$nrows" > "4" ) then
+  set IW5_lines_per_burst = `awk '$1 == "lines_per_burst:" {print $2}' $RSLC1_IW5_TOPS` 
+  set IW5_number_of_bursts = `awk '$1 == "number_of_bursts:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_burst_start_time_1 = `awk '$1 == "burst_start_time_1:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_burst_start_time_2 = `awk '$1 == "burst_start_time_2:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_first_valid_line = `awk '$1 == "first_valid_line_1:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_last_valid_line = `awk '$1 == "last_valid_line_1:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_near_range_slc = `awk '$1 == "near_range_slc:" {print $2}' $RSLC1_IW5_par`	
+  set IW5_first_valid_sample = `awk '$1 == "first_valid_sample_1:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_last_valid_sample = `awk '$1 == "last_valid_sample_1:" {print $2}' $RSLC1_IW5_TOPS`      
+  set IW5_start_line  = `echo "$IW5_burst_start_time_1 $start_time $azimuth_line_time $IW5_first_valid_line $azlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'`
+  set IW5_stop_line  = `echo "$IW5_burst_start_time_1 $start_time $azimuth_line_time $IW5_last_valid_line $azlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'`
+  set IW5_start_sample  = `echo "$IW5_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW5_first_valid_sample $rlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'` 
+  set IW5_stop_sample  = `echo "$IW5_near_range_slc $IW1_near_range_slc $range_pixel_spacing $IW5_last_valid_sample $rlks" | awk '{printf "%d", 0.5+($4+($1-$2)/$3)/$5}'` 
+  echo "IW5_valid_lines $IW5_start_line to $IW5_stop_line  IW5_valid_samples: $IW5_start_sample to $IW5_stop_sample"
+  set IW5_rows_offset = `echo "$IW5_burst_start_time_1  $IW5_burst_start_time_2 $azimuth_line_time $azlks" | awk '{printf "%f", ($2-$1)/$3/$4}'`
+  echo "IW5_rows_offset: $IW5_rows_offset"
+endif
+
+###################################################################################################################
+
+if (  "$overlap_type" == "1" ) then   # determine burst overlap regions within each sub-swath
+  echo "determine burst overlap regions within each sub-swath"
+  set number_of_swaths = "$nrows"
+  if ( -e "$poly" ) then
+   /bin/rm $poly
+  endif
+
+  set j="1"  # j: swath number
+  while ( "$j" <= "$number_of_swaths" )
+    if ("$j" == "1" ) then
+      set number_of_bursts = "$IW1_number_of_bursts"     
+      set start_sample = "$IW1_start_sample"
+      set stop_sample = "$IW1_stop_sample"
+      set start_line = "$IW1_start_line"
+      set stop_line = "$IW1_stop_line"
+      set rows_offset = "$IW1_rows_offset"
+      set k = "$IW1_k"
+    endif      
+    if ("$j" == "2" ) then
+      set number_of_bursts = "$IW2_number_of_bursts"     
+      set start_sample = "$IW2_start_sample"
+      set stop_sample = "$IW2_stop_sample"
+      set start_line = "$IW2_start_line"
+      set stop_line = "$IW2_stop_line"
+      set rows_offset = "$IW2_rows_offset"
+      set k = "$IW2_k"
+    endif      
+    if ("$j" == "3" ) then
+      set number_of_bursts = "$IW3_number_of_bursts"     
+      set start_sample = "$IW3_start_sample"
+      set stop_sample = "$IW3_stop_sample"
+      set start_line = "$IW3_start_line"
+      set stop_line = "$IW3_stop_line"
+      set rows_offset = "$IW3_rows_offset"
+      set k = "$IW3_k"
+    endif      
+    if ("$j" == "4" ) then
+      set number_of_bursts = "$IW4_number_of_bursts"     
+      set start_sample = "$IW4_start_sample"
+      set stop_sample = "$IW4_stop_sample"
+      set start_line = "$IW4_start_line"
+      set stop_line = "$IW4_stop_line"
+      set rows_offset = "$IW4_rows_offset"
+      set k = "$IW4_k"
+    endif      
+    if ("$j" == "5" ) then
+      set number_of_bursts = "$IW5_number_of_bursts"     
+      set start_sample = "$IW5_start_sample"
+      set stop_sample = "$IW5_stop_sample"
+      set start_line = "$IW5_start_line"
+      set stop_line = "$IW5_stop_line"
+      set rows_offset = "$IW5_rows_offset"
+      set k = "$IW5_k"
+    endif      
+
+    set i="1"  # burst number
+    while ( "$i" < "$number_of_bursts" )
+      set az1  = `echo "$start_line $i $rows_offset" | awk '{printf "%d", 0.5+$1+($2*$3)}'` 
+      set az2  = `echo "$stop_line $i $rows_offset" | awk '{printf "%d", 0.5+$1+(($2-1.)*$3)}'` 
+      echo "i,j: $i,$j  mli_cols: $start_sample to $stop_sample   mli_rows: $az1 to $az2"
+
+      if ( ("$i == "1") &&  ("$j == "1") ) then
+        echo "	$start_sample	$az1	1" > $poly
+      else       
+        echo "	$start_sample	$az1	1" >> $poly
+      endif
+      echo "	$stop_sample	$az1	2" >> $poly
+      echo "	$stop_sample	$az2	3" >> $poly
+      echo "	$start_sample	$az2	4" >> $poly
+      echo "" >> $poly
+
+      set i = `echo "$i" | awk '{printf "%d", $1+1}'`
+    end
+
+    set j = `echo "$j" | awk '{printf "%d", $1+1}'`
+  end
+
+  echo "azimuth overlap polygon file: $poly"
+
+endif # end of determine burst overlap regions within each sub-swath
+
+###################################################################################################################
+
+if (  ( "$overlap_type" == "2" ) &&  ( "$nrows" > "1" ) ) then   # determine polygons for range overlaps between sub-swaths
+  echo "determine polygons for range overlaps between sub-swaths" 
+  set number_of_swaths = "$nrows"
+  if ( -e "$poly" ) then
+   /bin/rm $poly
+  endif
+
+  set j="1"  # j: swath number
+  while ( "$j" < "$number_of_swaths" )
+    if ("$j" == "1" ) then
+      set number_of_bursts1 = "$IW1_number_of_bursts"     
+      set rows_offset1 = "$IW1_rows_offset"
+      set number_of_bursts2  = `echo "$IW2_number_of_bursts $IW2_k" | awk '{printf "%d", $1-$2}'` 
+      set rows_offset2 = "$IW2_rows_offset"
+      set start_line  = `echo "$IW2_start_line $IW2_k $IW2_rows_offset" | awk '{printf "%d", 0.5+$1+($2*$3)}'` 
+      set stop_line  = "$IW1_stop_line" 
+      set start_sample  = "$IW2_start_sample" 
+      set stop_sample  = "$IW1_stop_sample" 
+    endif      
+
+    if ("$j" == "2" ) then
+      set number_of_bursts1 = "$IW2_number_of_bursts"     
+      set rows_offset1 = "$IW2_rows_offset"
+      set number_of_bursts2  = `echo "$IW3_number_of_bursts $IW3_k" | awk '{printf "%d", $1-$2}'` 
+      set rows_offset2 = "$IW3_rows_offset"
+      set start_line  = "$IW3_start_line"
+      set stop_line  = "$IW2_stop_line" 
+      set start_line  = `echo "$IW3_start_line $IW3_k $IW3_rows_offset" | awk '{printf "%d", 0.5+$1+($2*$3)}'` 
+      set stop_line  = `echo "$IW2_stop_line" | awk '{printf "%d", $1+($2*$3)}'` 
+      set start_sample  = "$IW3_start_sample" 
+      set stop_sample  = "$IW2_stop_sample" 
+    endif      
+
+    if ("$j" == "3" ) then
+      set number_of_bursts1 = "$IW3_number_of_bursts"     
+      set rows_offset1 = "$IW3_rows_offset"
+      set number_of_bursts2  = `echo "$IW4_number_of_bursts $IW4_k" | awk '{printf "%d", $1-$2}'` 
+      set rows_offset2 = "$IW4_rows_offset"
+      set start_line  = `echo "$IW4_start_line $IW4_k $IW4_rows_offset" | awk '{printf "%d", 0.5+$1+($2*$3)}'` 
+      set stop_line  = `echo "$IW3_stop_line" | awk '{printf "%d", $1+($2*$3)}'` 
+      set start_sample  = "$IW4_start_sample" 
+      set stop_sample  = "$IW3_stop_sample" 
+    endif      
+
+    if ("$j" == "4" ) then
+      set number_of_bursts1 = "$IW4_number_of_bursts"     
+      set rows_offset1 = "$IW4_rows_offset"
+      set number_of_bursts2  = `echo "$IW5_number_of_bursts $IW5_k" | awk '{printf "%d", $1-$2}'` 
+      set rows_offset2 = "$IW5_rows_offset"
+      set start_line  = `echo "$IW5_start_line $IW5_k $IW5_rows_offset" | awk '{printf "%d", 0.5+$1+($2*$3)}'` 
+      set stop_line  = `echo "$IW4_stop_line" | awk '{printf "%d", $1+($2*$3)}'` 
+      set start_sample  = "$IW5_start_sample" 
+      set stop_sample  = "$IW4_stop_sample" 
+    endif      
+
+    set i="1"  # burst number
+    while ( ( "$i" < "$number_of_bursts1" ) && ( "$i" < "$number_of_bursts2" ) )
+      set az1  = `echo "$start_line $i $rows_offset1" | awk '{printf "%d", 0.5+$1+(($2-1.)*$3)}'` 
+      set az2  = `echo "$stop_line $i $rows_offset1" | awk '{printf "%d", 0.5+$1+(($2-1.)*$3)}'` 
+      echo "i,j: $i,$j  mli_cols: $start_sample to $stop_sample   mli_rows: $az1 to $az2"
+
+      if ( ("$i == "1") &&  ("$j == "1") ) then
+        echo "	$start_sample	$az1	1" > $poly
+      else       
+        echo "	$start_sample	$az1	1" >> $poly
+      endif
+      echo "	$stop_sample	$az1	2" >> $poly
+      echo "	$stop_sample	$az2	3" >> $poly
+      echo "	$start_sample	$az2	4" >> $poly
+      echo "" >> $poly
+
+      set i = `echo "$i" | awk '{printf "%d", $1+1}'`
+    end
+
+    set j = `echo "$j" | awk '{printf "%d", $1+1}'`
+  end
+
+  echo "azimuth overlap polygon file: $poly"
+
+endif # end of determine burst overlap regions within each sub-swath
+
+###################################################################################################################
+
+exit
