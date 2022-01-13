@@ -310,8 +310,8 @@ def geocode(file, width_geo, lookup_table, width, length, out_file):
         file (str): file
         width_geo (int): geo width
         lookup_table (str): lookup table
-        width (int): rdr width
-        length (int): rdr length
+        width (int): rdc width
+        length (int): rdc length
         out_file (str): output file
     """
     call_str = f"geocode {lookup_table} {file} {width_geo} {out_file} {width} {length} 1 0"
@@ -323,7 +323,7 @@ def sub_gacos_from_int(int_file, length, m_gacos_file, s_gacos_file, int_correct
 
     Args:
         int_file (str): int file
-        length (int): rdr length
+        length (int): rdc length
         m_gacos_file (str): gacos file1
         s_gacos_file (str): gacos file2
         int_correct_file (str): output int file
@@ -596,7 +596,7 @@ def main():
         os.chdir(gacos_dir)
         for date in dates:
             gacos_file = date + '.ztd.tif'
-            out_file = gacos_file + '.phase'
+            out_file = date + '.ztd.phase'
             interp_gacos(gacos_file, dem_seg_par, wavelength, incidence, out_file)
             out_file2 = out_file + '.rdc'
             geocode(out_file, width_geo, lookup_fine, width_mli, length_mli, out_file2)
@@ -648,8 +648,20 @@ def main():
         call_str = f"rascc {pair}.cc {sm_mli} {width_mli} 1 1 0  1 1 0.1 0.9 1 0.35"
         os.system(call_str)
 
-        call_str = f"adf {pair}.diff {pair}.adf.diff {pair}.adf.cc {width_mli} 0.75 32 5 4 0 0 .2"
+        # call_str = f"adf {pair}.diff {pair}.adf.diff {pair}.adf.cc {width_mli} 0.75 32 5 4 0 0 .2"
+        # os.system(call_str)
+
+        call_str = f"adf {pair}.diff {pair}.adf.diff1 {pair}.adf.cc1 {width_mli} 0.3 64"
         os.system(call_str)
+        call_str = f"adf {pair}.adf.diff1 {pair}.adf.diff2 {pair}.adf.cc2 {width_mli} 0.4 32"
+        os.system(call_str)
+        call_str = f"adf {pair}.adf.diff2 {pair}.adf.diff {pair}.adf.cc {width_mli} 0.5 16"
+        os.system(call_str)
+
+        del_file(f"{pair}.adf.diff1")
+        del_file(f"{pair}.adf.diff2")
+        del_file(f"{pair}.adf.cc1")
+        del_file(f"{pair}.adf.cc2")
 
         call_str = f"rasmph_pwr {pair}.adf.diff {sm_mli} {width_mli} 1 1 0 1 1 0.7 0.35"
         os.system(call_str)
@@ -676,16 +688,28 @@ def main():
         os.system(call_str)
 
         if gacos_dir and wavelength:
-            m_gacos = os.path.join(gacos_dir, m_date + '.ztd.tif.phase.rdc')
-            s_gacos = os.path.join(gacos_dir, s_date + '.ztd.tif.phase.rdc')
+            m_gacos = os.path.join(gacos_dir, m_date + '.ztd.phase.rdc')
+            s_gacos = os.path.join(gacos_dir, s_date + '.ztd.phase.rdc')
 
             int_file = f"{pair}.diff"
             int_correct_file = f"{pair}.diff.gacos"
 
             sub_gacos_from_int(int_file, length_mli, m_gacos, s_gacos, int_correct_file)
 
-            call_str = f"adf {pair}.diff.gacos {pair}.adf.diff.gacos {pair}.adf.cc.gacos {width_mli} 0.75 32 5 4 0 0 .2"
+            # call_str = f"adf {pair}.diff.gacos {pair}.adf.diff.gacos {pair}.adf.cc.gacos {width_mli} 0.75 32 5 4 0 0 .2"
+            # os.system(call_str)
+
+            call_str = f"adf {pair}.diff.gacos {pair}.adf.diff.gacos1 {pair}.adf.cc.gacos1 {width_mli} 0.3 64"
             os.system(call_str)
+            call_str = f"adf {pair}.adf.diff.gacos1 {pair}.adf.diff.gacos2 {pair}.adf.cc.gacos2 {width_mli} 0.4 32"
+            os.system(call_str)
+            call_str = f"adf {pair}.adf.diff.gacos2 {pair}.adf.diff.gacos {pair}.adf.cc.gacos {width_mli} 0.5 16"
+            os.system(call_str)
+
+            del_file(f"{pair}.adf.diff.gacos1")
+            del_file(f"{pair}.adf.diff.gacos2")
+            del_file(f"{pair}.adf.cc.gacos1")
+            del_file(f"{pair}.adf.cc.gacos2")
 
             call_str = f"rasmph_pwr {pair}.adf.diff.gacos {sm_mli} {width_mli} 1 1 0 1 1 0.7 0.35"
             os.system(call_str)

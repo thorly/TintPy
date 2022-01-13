@@ -166,7 +166,11 @@ def get_orbit_file(s1_date, sensor, orbit_dir):
     for orb in os.listdir(orbit_dir):
         if orb.endswith('EOF') and orb.startswith(sensor):
             dates = re.findall(r'\d{8}', orb)
-            if orbit_date == dates[-2]:
+            # POEORB
+            if orbit_date == dates[-2] and 'POEORB' in orb:
+                orbit_file = os.path.join(orbit_dir, orb)
+            # RESORB
+            if s1_date == dates[-2] and 'RESORB' in orb:
                 orbit_file = os.path.join(orbit_dir, orb)
 
     return orbit_file

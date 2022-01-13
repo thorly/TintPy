@@ -342,7 +342,7 @@ def main():
         s_rslc = os.path.join(rslc_dir, s_date, s_date + slc_extension)
         s_rslc_par = s_rslc + '.par'
 
-        call_str = f"SBI_INT_F_F {m_rslc} {m_rslc_par} {s_rslc} {s_rslc_par} {pair}.sbi.int {pair}.off {m_date}.mli {m_date}.mli.par 0.5 {rlks} {alks} 0 1"
+        call_str = f"SBI_INT {m_rslc} {m_rslc_par} {s_rslc} {s_rslc_par} {pair}.sbi.int {pair}.off {m_date}.mli {m_date}.mli.par 0.5 {rlks} {alks} 0 1"
         os.system(call_str)
 
         width_mli = read_gamma_par(f"{m_date}.mli.par", 'range_samples')
