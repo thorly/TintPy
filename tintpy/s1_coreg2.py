@@ -45,7 +45,7 @@ def run(call_str):
     Args:
         call_str (str): command
     """
-    
+    os.system(call_str)
 
 
 def read_gamma_par(par_file, keyword):
@@ -59,7 +59,7 @@ def read_gamma_par(par_file, keyword):
     with open(par_file, "r", encoding="utf-8") as f:
         for line in f.readlines():
             if line.count(keyword) == 1:
-                value = line.split(":")[1].strip()
+                value = line.split()[1].strip()
 
     return value
 
@@ -190,7 +190,7 @@ def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, out_dir):
     slc_par_out = os.path.join(out_dir, date + ".slc.par")
 
     run(f"SLC_mosaic_S1_TOPS {slc_tab} {slc_out} {slc_par_out} {rlks} {alks}")
-    
+
     os.remove(slc_tab)
 
     return slc_out, slc_par_out
@@ -338,6 +338,14 @@ def main():
     if not os.path.isdir(m_rslc_dir):
         os.mkdir(m_rslc_dir)
 
+    # copy m_date slc to m_rslc_dir
+    m_rslc = os.path.join(m_rslc_dir, m_date + ".rslc")
+    m_rslc_par = m_rslc + ".par"
+    if not os.path.isfile(m_rslc):
+        shutil.copy(m_slc, m_rslc)
+    if not os.path.isfile(m_rslc_par):
+        shutil.copy(m_slc_par, m_rslc_par)
+
     if flag == "t":
         print("Copy reference iw slc to {}".format(m_rslc_dir))
         for i in sub_swath:
@@ -355,8 +363,6 @@ def main():
 
     # make rdc dem
     rdc_dem = make_rdc_dem(m_slc, m_slc_par, dem, dem_par, rlks, alks, geo_dir)
-
-    copy_ref_flag = True
 
     for s_date in s_dates:
         s_slc_dir = os.path.join(slc_dir, s_date)
@@ -412,8 +418,8 @@ def main():
 
         run(f"offset_fit {offs_file} {snr_file} {off_file}  - - 0.5 1 0")
 
-        run(f"SLC_interp_lt_S1_TOPS SLC2_tab {s_slc_par} SLC1_tab {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_file} RSLC2_tab {s_rslc} {s_rslc_par}")
-        
+        run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_file} rslc_tab {s_rslc} {s_rslc_par}")
+
         off1_file = f"{pair}.off1"
         run(f"create_offset {m_slc_par} {s_slc_par} {off1_file} 1 {rlks} {alks} 0")
 
@@ -423,79 +429,41 @@ def main():
         run(f"offset_pwr {m_slc} {s_rslc} {m_slc_par} {s_rslc_par} {off1_file} {offs1_file} {snr1_file} 256 64 {coreg_file} 1 200 200 16.0 4 0 0")
 
         run(f"offset_fit {offs1_file} {snr1_file} {off1_file}  - - 0.5 1 0")
-        
+
         off_total_file = f"{pair}.off.total"
         run(f"offset_add {off_file} {off1_file} {off_total_file}")
 
-        run(f"SLC_interp_lt_S1_TOPS SLC2_tab {s_slc_par} SLC1_tab {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_total_file} RSLC2_tab {s_rslc} {s_rslc_par}")
-
-        sim_unw0 = f"{pair}.sim_unw0"
-        run(f"phase_sim_orb {m_slc_par} {s_slc_par} {off_total_file} {rdc_dem} {sim_unw0} {m_slc_par} - - 1 1")
-        
-
-        diff0 = f"{pair}.diff0"
-        run(f"SLC_diff_intf {m_slc} {s_rslc} {m_slc_par} {s_rslc_par} {off_total_file} {sim_unw0} {diff0} {rlks} {alks} 0 0 0.25 1 1")
-        
-
-        width_mli = read_gamma_par(m_mli_par, "range_samples")
-        run(f"rasmph {diff0} {width_mli} 1 0 1 1 1. .35 1 {diff0}.bmp")
-        
+        run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_total_file} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected1 = f"{pair}.off.corrected1"
-        run(f"S1_coreg_overlap SLC1_tab RSLC2_tab {pair} {off_total_file} {off_corrected1}")
-        run(f"SLC_interp_lt_S1_TOPS SLC2_tab {s_slc_par} SLC1_tab {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected1} RSLC2_tab {s_rslc} {s_rslc_par}")
-        
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_total_file} {off_corrected1}")
+        run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected1} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected2 = f"{pair}.off.corrected2"
-        run(f"S1_coreg_overlap SLC1_tab RSLC2_tab {pair} {off_corrected1} {off_corrected2}")
-        run(f"SLC_interp_lt_S1_TOPS SLC2_tab {s_slc_par} SLC1_tab {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected2} RSLC2_tab {s_rslc} {s_rslc_par}")
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected1} {off_corrected2}")
+        run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected2} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected3 = f"{pair}.off.corrected3"
-        run(f"S1_coreg_overlap SLC1_tab RSLC2_tab {pair} {off_corrected2} {off_corrected3}")
-        run(f"SLC_interp_lt_S1_TOPS SLC2_tab {s_slc_par} SLC1_tab {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected3} RSLC2_tab {s_rslc} {s_rslc_par}")
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected2} {off_corrected3}")
+        run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected3} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected4 = f"{pair}.off.corrected4"
-        run(f"S1_coreg_overlap SLC1_tab RSLC2_tab {pair} {off_corrected3} {off_corrected4}")
-        run(f"SLC_interp_lt_S1_TOPS SLC2_tab {s_slc_par} SLC1_tab {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected4} RSLC2_tab {s_rslc} {s_rslc_par}")
-        
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected3} {off_corrected4}")
+        run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected4} rslc_tab {s_rslc} {s_rslc_par}")
 
-        sim_unw = f"{pair}.sim_unw"
-        run(f"phase_sim_orb {m_slc_par} {s_slc_par} {off_corrected4} {rdc_dem} {sim_unw} {m_slc_par} - - 1 1")
-        
-        diff = f"{pair}.diff"
-        run(f"SLC_diff_intf {m_slc} {s_rslc} {m_slc_par} {s_rslc_par} {off_corrected4} {sim_unw} {diff} {rlks} {alks} 0 0 0.25 1 1")
+        run(f"phase_sim_orb {m_slc_par} {s_slc_par} {off_corrected4} {rdc_dem} {pair}.sim_unw {m_slc_par} - - 1 1")
+        run(f"SLC_diff_intf {m_slc} {s_rslc} {m_slc_par} {s_rslc_par} {off_corrected4} {pair}.sim_unw {pair}.diff {rlks} {alks} 0 0 0.25 1 1")
 
-        run(f"rasmph {diff} {width_mli} 1 0 1 1 1. .35 1 {diff}.bmp")
-        run(f"rasmph_pwr {diff} {m_mli} {width_mli} 1 1 0 1 1 1. .35 1 {diff}.pwr.bmp")
-
-
-        # filter three times to check coregistration quality
-        pair = m_date + "_" + s_date
-        diff_par = pair + ".diff_par"
-        width = read_gamma_par(diff_par, "range_samp_1:")
-
-        run(f"adf {pair}.diff {pair}.adf.diff1 {pair}.adf.cc1 {width} 0.3 64")
-        run(f"adf {pair}.adf.diff1 {pair}.adf.diff2 {pair}.adf.cc2 {width} 0.3 32")
-        run(f"adf {pair}.adf.diff2 {pair}.adf.diff {pair}.adf.cc {width} 0.3 16")
-        run(f"rasmph_pwr {pair}.adf.diff {m_date}.rmli {width} 1 1 0 1 1 0.7 0.35")
-
-        # just move m_date rslc to rslc_dir once
-        if copy_ref_flag:
-            dst_rslc = os.path.join(m_rslc_dir, m_date + ".rslc")
-            dst_rslc_par = dst_rslc + ".par"
-            if not os.path.isfile(dst_rslc):
-                shutil.move(m_date + ".rslc", m_rslc_dir)
-            if not os.path.isfile(dst_rslc_par):
-                shutil.move(m_date + ".rslc.par", m_rslc_dir)
-            copy_ref_flag = False
+        width_mli = read_gamma_par(m_mli_par, "range_samples")
+        run(f"rasmph {pair}.diff {width_mli} 1 0 1 1 1. .35 1 {pair}.diff.bmp")
+        run(f"rasmph_pwr {pair}.diff {m_mli} {width_mli} 1 1 0 1 1 1. .35 1 {pair}.diff.pwr.bmp")
 
         # clean s_rslc dir
         save_files = []
         save_files.append(s_date + ".rslc")
         save_files.append(s_date + ".rslc.par")
-        save_files.append(pair + ".coreg_quality")
         save_files.append(pair + ".diff.bmp")
-        save_files.append(pair + ".adf.diff.bmp")
+        save_files.append(pair + ".diff.pwr.bmp")
 
         # save iw rslc
         if flag == "t":
@@ -506,7 +474,7 @@ def main():
                 save_files.append(iw_rslc)
                 save_files.append(iw_rslc_par)
                 save_files.append(iw_rslc_tops_par)
-        
+
         # delete files
         for file in os.listdir(s_rslc_dir):
             if file not in save_files:
@@ -521,7 +489,7 @@ def main():
     for rslc in rslc_files:
         slc2bmp(rslc, rslc + ".par", rlks, alks, rslc + ".bmp")
 
-    print("\ndaz10000 is a relative indicator which cannot guarantee the coregistration is ok, you should check the adf.diff.bmp files!")
+    print("\nYou can open diff.bmp (diff.pwr.bmp) files to check the coregistration quality!")
 
     print("\nAll done, enjoy it!\n")
 
