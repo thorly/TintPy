@@ -633,7 +633,10 @@ def main():
         call_str = f"create_diff_par {pair}.off - {pair}.diff_par 0 < diff_par.in"
         os.system(call_str)
 
-        call_str = f"phase_sim {m_rslc_par} {pair}.off {pair}.base {rdc_dem} {pair}.sim_unw 0 0 - {calc_time_delta(pair)} 1"
+        # call_str = f"phase_sim {m_rslc_par} {pair}.off {pair}.base {rdc_dem} {pair}.sim_unw 0 0 - {calc_time_delta(pair)} 1"
+        # os.system(call_str)
+
+        call_str = (f"phase_sim_orb {m_rslc_par} {s_rslc_par} {pair}.off {rdc_dem} {pair}.sim_unw {m_rslc_par} - - 1 1")
         os.system(call_str)
 
         call_str = f"SLC_diff_intf {m_rslc} {s_rslc} {m_rslc_par} {s_rslc_par} {pair}.off {pair}.sim_unw {pair}.diff {rlks} {alks} 1 1"
