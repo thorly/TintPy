@@ -50,7 +50,7 @@ def read_gamma_par(par_file, keyword):
     with open(par_file, 'r', encoding='utf-8') as f:
         for line in f.readlines():
             if line.count(keyword) == 1:
-                value = line.split(':')[1].strip()
+                value = line.split()[1].strip()
 
     return value
 
@@ -425,21 +425,6 @@ def main():
         call_str = f"S1_coreg_TOPS slc_tab_m {m_date} slc_tab_s {s_date} rslc_tab {rdc_dem} {rlks} {alks} - - 0.7 0.001 0.7 1"
         os.system(call_str)
 
-        # filter three times to check coregistration quality
-        pair = m_date + '_' + s_date
-        diff_par = pair + '.diff_par'
-        width = read_gamma_par(diff_par, 'range_samp_1:')
-
-        call_str = f"adf {pair}.diff {pair}.adf.diff1 {pair}.adf.cc1 {width} 0.3 64"
-        os.system(call_str)
-        call_str = f"adf {pair}.adf.diff1 {pair}.adf.diff2 {pair}.adf.cc2 {width} 0.3 32"
-        os.system(call_str)
-        call_str = f"adf {pair}.adf.diff2 {pair}.adf.diff {pair}.adf.cc {width} 0.3 16"
-        os.system(call_str)
-
-        call_str = f"rasmph_pwr {pair}.adf.diff {m_date}.rmli {width} 1 1 0 1 1 0.7 0.35"
-        os.system(call_str)
-
         # just move m_date rslc to rslc_dir once
         if copy_ref_flag:
             dst_rslc = os.path.join(m_rslc_dir, m_date + '.rslc')
@@ -454,9 +439,10 @@ def main():
         save_files = []
         save_files.append(s_date + '.rslc')
         save_files.append(s_date + '.rslc.par')
+
+        pair = m_date + '_' + s_date
         save_files.append(pair + '.coreg_quality')
         save_files.append(pair + '.diff.bmp')
-        save_files.append(pair + '.adf.diff.bmp')
 
         # save iw rslc
         if flag == 't':
