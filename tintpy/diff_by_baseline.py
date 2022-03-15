@@ -151,11 +151,11 @@ rasrmg $pair.adf.unw.sub.gacos -  $width_rdc 1 1 0 1 1 .5 1. .35 .0 1 $pair.adf.
 
 USAGE = """Example:
   # reference point of unwrapping is (0, 0) and no mask
-  python3 rslc2ifg.py /ly/rslc /ly/SBAS /ly/dem 20211229 8 2 200 60
+  python3 diff_by_baseline.py /ly/rslc /ly/SBAS /ly/dem 20211229 8 2 200 60
   # set reference point of unwrapping and mask
-  python3 rslc2ifg.py /ly/rslc /ly/SBAS /ly/dem 20211229 8 2 200 60 -r 100 -l 100 -c 0.3
+  python3 diff_by_baseline.py /ly/rslc /ly/SBAS /ly/dem 20211229 8 2 200 60 -r 100 -l 100 -c 0.3
   # for aps correction (Sentinel-1 data)
-  python3 rslc2ifg.py /ly/rslc /ly/SBAS /ly/dem 20211229 8 2 200 60 -g /ly/gacos -w 0.05546
+  python3 diff_by_baseline.py /ly/rslc /ly/SBAS /ly/dem 20211229 8 2 200 60 -g /ly/gacos -w 0.05546
 """
 
 
