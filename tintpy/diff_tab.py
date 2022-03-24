@@ -14,8 +14,8 @@ import sys
 import numpy as np
 
 EXAMPLE = """Example:
-  python3 diff_tab.py /ly/diff 0.5 diff_tab
-  python3 diff_tab.py /ly/diff 0.5 diff_tab -u adf.unw.gacos -c adf.cc.gacos -d diff.par
+  python3 diff_tab.py /ly/diff /ly/geo 0.5 diff_tab
+  python3 diff_tab.py /ly/diff /ly/geo 0.5 diff_tab -u adf.unw.gacos -c adf.cc.gacos -d diff.par
 """
 
 

@@ -586,6 +586,17 @@ if __name__ == "__main__":
 
     mk_geo_all(mli_dir, dates[0:-1], dem, dem_par, geo_dir)
 
+    # rename
+    lookup_fines = glob.glob(os.path.join(geo_dir, '*_1.map_to_rdc'))
+    for file in lookup_fines:
+        new_name = file.replace('_1.map_to_rdc', '.lookup_fine')
+        os.rename(file, new_name)
+
+    lookups = glob.glob(os.path.join(geo_dir, '*_0.map_to_rdc'))
+    for file in lookups:
+        new_name = file.replace('_0.map_to_rdc', '.lookup')
+        os.rename(file, new_name)
+
     # select pairs
     base_dir = os.path.join(out_dir, 'base_calc')
     if not os.path.isdir(base_dir):
@@ -657,7 +668,7 @@ if __name__ == "__main__":
                 process_gacos(m_gacos, s_gacos, 'tif', dem_seg_par, wavelength, incidence, out_file)
 
             # replace value
-            lookup = os.path.join(geo_dir, m_date + '_1.map_to_rdc')
+            lookup = os.path.join(geo_dir, m_date + '.lookup_fine')
             m_mli = glob.glob(os.path.join(mli_dir, m_date + '*mli'))[0]
             off_par = os.path.join(diff_dir, pair + '.off')
             diff_par = os.path.join(geo_dir, m_date + '.diff_par')

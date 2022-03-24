@@ -126,7 +126,7 @@ def main():
 
     print('Copying files into {}'.format(geometry_dir))
 
-    UTM_TO_RDC_path = os.path.join(geo_dir, date + '_1.map_to_rdc')
+    UTM_TO_RDC_path = os.path.join(geo_dir, date + '.lookup_fine')
     dst_UTM_TO_RDC = 'sim_' + date + '_' + rlks + 'rlks.UTM_TO_RDC'
     dst_UTM_TO_RDC_path = os.path.join(geometry_dir, dst_UTM_TO_RDC)
 
