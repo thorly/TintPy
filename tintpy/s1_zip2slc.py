@@ -69,113 +69,6 @@ def get_dates_from_zips(zip_files):
     return dates
 
 
-def get_date_from_par(slc_par):
-    """Get date from slc par
-
-    Args:
-        slc_par (str): slc par file
-
-    Returns:
-        str: date
-    """
-    with open(slc_par, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            if line.strip().startswith('date'):
-                tmp = line.strip().split(':')[1].strip().split()
-                y, m, d = tmp[0], tmp[1], tmp[2]
-                if len(m) == 1:
-                    m = '0' + m
-                if len(d) == 1:
-                    d = '0' + d
-                date = y + m + d
-
-    return date
-
-
-def get_sensor_from_par(slc_par):
-    """Get sensor name from slc par
-
-    Args:
-        slc_par (str): slc par file
-
-    Returns:
-        str: sensor name, S1A or S1B
-    """
-    with open(slc_par, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            if line.strip().startswith('sensor'):
-                if 'S1A' in line:
-                    sensor = 'S1A'
-                else:
-                    sensor = 'S1B'
-
-    return sensor
-
-
-def date_math(date, day):
-    """date operation (add or subtract day)
-
-    Args:
-        date (str): date
-        day (int): day
-
-    Returns:
-        str: operated date
-    """
-    y = int(date[0:4])
-    m = int(date[4:6])
-    d = int(date[6:8])
-    in_date = datetime.datetime(y, m, d)
-    out_date = in_date + datetime.timedelta(days=day)
-    out_date = out_date.strftime('%Y%m%d')
-
-    return out_date
-
-
-def get_satellite_name(zip_file):
-    """Get satellite name from S1 zip file
-
-    Args:
-        zip_file (str): S1 zip file
-
-    Returns:
-        str: satellite name
-    """
-    file_name = os.path.basename(zip_file)
-    if file_name.startswith('S1A_IW_SLC'):
-        name = 'S1A'
-    else:
-        name = 'S1B'
-
-    return name
-
-
-def get_orbit_file(s1_date, sensor, orbit_dir):
-    """Get orbit file using S1 date and sensor name
-
-    Args:
-        s1_date (str): S1 date
-        sensor (str): satellite name, S1A or S1B
-        orbit_dir (str): directory including orbit files
-
-    Returns:
-        str: orbit file including path
-    """
-    orbit_file = None
-    orbit_date = date_math(s1_date, -1)
-    for orb in os.listdir(orbit_dir):
-        if orb.endswith('EOF') and orb.startswith(sensor):
-            dates = re.findall(r'\d{8}', orb)
-            # POEORB
-            if orbit_date == dates[-2] and 'POEORB' in orb:
-                orbit_file = os.path.join(orbit_dir, orb)
-            # RESORB
-            if s1_date == dates[-2] and 'RESORB' in orb:
-                orbit_file = os.path.join(orbit_dir, orb)
-
-    return orbit_file
-
-
 def lookup_from_list(str_list, pol, sub_swath):
     """lookup list element using pol and sub_swath
 
@@ -288,7 +181,7 @@ def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
                 noise_xml = os.path.join(out_slc_dir, noise_xml)
                 cmd_str = f'par_S1_SLC {geo_tiff} {annotation_xml} {calibration_xml} {noise_xml} {slc_par} {slc} {tops_par}'
             else:
-                cmd_str = f'par_S1_SLC {geo_tiff} {annotation_xml} {calibration_xml} {slc_par} {slc} {tops_par}'
+                cmd_str = f'par_S1_SLC {geo_tiff} {annotation_xml} {calibration_xml} - {slc_par} {slc} {tops_par}'
             os.system(cmd_str)
 
     tops_pars = glob.glob(os.path.join(out_slc_dir, f'*{pol[0]}.slc.tops_par'))
@@ -296,27 +189,6 @@ def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
     gen_number_table(tops_pars, out_file)
     # delete files
     shutil.rmtree(glob.glob(os.path.join(out_slc_dir, 'S1*SAFE'))[0])
-
-
-def orbit_correct(slc_par, orbit_dir):
-    """Extract Sentinel-1 OPOD state vectors and copy into the ISP image parameter file
-
-    Args:
-        slc_par (str): slc par
-        orbit_dir (str): dectory including orbits
-
-    Returns:
-        str: orbit correct result
-    """
-    s1_date = get_date_from_par(slc_par)
-    sensor = get_sensor_from_par(slc_par)
-    orbit_file = get_orbit_file(s1_date, sensor, orbit_dir)
-    if orbit_file:
-        call_str = f'S1_OPOD_vec.vec {slc_par} {orbit_file}'
-        os.system(call_str)
-        return s1_date + ' YES'
-    else:
-        return s1_date + ' No'
 
 
 def read_gamma_par(par_file, keyword):
@@ -362,39 +234,18 @@ def run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks):
         sub_swath (int list): sub_swath number
         rlks (int): range looks
         alks (int): azimuth looks
-
-    Returns:
-        str list: orbit correct result
     """
-    orb_correct_res = []
     # unzip file and generate slc
     s1_import_slc_from_zip(zip_file, pol, sub_swath, date_slc_dir)
     # orbit correct and slc2bmp
     slcs = glob.glob(os.path.join(date_slc_dir, '*iw*slc'))
     for slc in slcs:
         slc_par = slc + '.par'
-        res = orbit_correct(slc_par, orb_dir)
-        orb_correct_res.append(res)
-        bmp = slc + '.bmp'
-        slc2bmp(slc, slc_par, rlks, alks, bmp)
-
-    return orb_correct_res
-
-
-def print_orb_correct_report(orb_correct_res):
-    """print orbit correct report
-
-    Args:
-        orb_correct_res (str list): orbit correct report result
-    """
-    print('-' * 31)
-    title = 'orbit correction report'
-    print('|' + title.center(29) + '|')
-    print('-' * 31)
-    for res in orb_correct_res:
-        date, flag = res.split()
-        print('|' + date.center(14) + '|' + flag.center(14) + '|')
-        print('-' * 31)
+        # orbit correct
+        call_str = f'OPOD_vec {slc_par} {orb_dir}'
+        os.system(call_str)
+        # slc2bmp
+        slc2bmp(slc, slc_par, rlks, alks, slc + '.bmp')
 
 
 def main():
@@ -407,6 +258,7 @@ def main():
     sub_swath = inps.sub_swath
     rlks = inps.rlks
     alks = inps.alks
+
     # check input
     if not os.path.isdir(zip_dir):
         sys.exit(f'{zip_dir} does not exist.')
@@ -414,16 +266,19 @@ def main():
         sys.exit(f'{orb_dir} does not exist.')
     if not os.path.isdir(slc_dir):
         os.mkdir(slc_dir)
+
     # get all raw files
     zip_files = glob.glob(os.path.join(zip_dir, 'S1*_IW_SLC*zip'))
     if len(zip_files) == 0:
         sys.exit(f'Cannot find zip files in {zip_dir}.')
+
     # get all dates
     dates = get_dates_from_zips(zip_files)
-    orb_correct_res = []
+
     for date in dates:
         same_date_zips = glob.glob(os.path.join(zip_dir, f'S1*_IW_SLC*{date}*zip'))
         same_date_zips = sorted(same_date_zips, key=lambda i: i[26:32])
+
         # one date --> one zip
         if len(same_date_zips) == 1:
             zip_file = same_date_zips[0]
@@ -432,8 +287,8 @@ def main():
             if not os.path.isdir(date_slc_dir):
                 os.mkdir(date_slc_dir)
             # run all step
-            res = run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks)
-            orb_correct_res += res
+            run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks)
+
         # one date --> multi zips
         else:
             for i in range(len(same_date_zips)):
@@ -443,10 +298,7 @@ def main():
                 if not os.path.isdir(date_slc_dir):
                     os.mkdir(date_slc_dir)
                 # run all step
-                res = run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks)
-                orb_correct_res += res
-
-    print_orb_correct_report(orb_correct_res)
+                run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks)
 
     print('\nAll done, enjoy it!\n')
 
