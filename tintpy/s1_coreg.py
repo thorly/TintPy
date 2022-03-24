@@ -12,7 +12,6 @@ import re
 import shutil
 import sys
 
-from subprocess import Popen, PIPE
 
 EXAMPLE = """Example:
   python3 s1_coreg.py /ly/slc /ly/rslc /ly/dem 20211229 2 -r 8 -a 2
@@ -200,53 +199,6 @@ def slc_mosaic(date_slc_dir, sub_swaths, pol, rlks, alks, out_dir):
     return slc_out, slc_par_out
 
 
-def check_dem_size(slc_par, dem_par):
-    """Check whether the dem completely covers the research area
-
-    Args:
-        slc_par (str): SLC parameter file
-        dem_par (str): dem parameter file
-    """
-    # calc lon and lat of dem
-    width = int(read_gamma_par(dem_par, 'width'))
-    nlines = int(read_gamma_par(dem_par, 'nlines'))
-    corner_lat = float(read_gamma_par(dem_par, 'corner_lat'))
-    corner_lon = float(read_gamma_par(dem_par, 'corner_lon'))
-    post_lat = float(read_gamma_par(dem_par, 'post_lat'))
-    post_lon = float(read_gamma_par(dem_par, 'post_lon'))
-
-    north = corner_lat
-    south = north + post_lat * nlines
-    west = corner_lon
-    east = west + post_lon * width
-
-    print(f"longitude and latitude of DEM: {west:>9}{east:>9}{south:>9}{north:>9}")
-
-    # calc lon and lat of slc
-    out = Popen(f"SLC_corners {slc_par}", shell=True, stdout=PIPE)
-    out_info = out.stdout.readlines()
-    for line in out_info:
-        line = str(line, 'utf-8')
-        if "upper left corner" in line:
-            sp = line.split()
-            min_lon, max_lat = float(sp[-1]), float(sp[-2])
-        if "lower right corner" in line:
-            sp = line.split()
-            max_lon, min_lat = float(sp[-1]), float(sp[-2])
-
-    print(f"longitude and latitude of SLC: {min_lon:>9}{max_lon:>9}{min_lat:>9}{max_lat:>9}")
-
-    # check
-    e1 = (min_lon >= west)
-    e2 = (max_lon <= east)
-    e3 = (min_lat >= south)
-    e4 = (max_lat <= north)
-
-    if not (e1 and e2 and e3 and e4):
-        print("SLC out of DEM coverage, please remake DEM!")
-        sys.exit()
-
-
 def print_coreg_quality(quality_files):
     """print coregistration quality
 
@@ -365,9 +317,6 @@ def main():
 
     m_slc, m_slc_par = slc_mosaic(m_slc_dir, sub_swath, pol, rlks, alks, geo_dir)
 
-    # check dem
-    check_dem_size(m_slc_par, dem_par)
-
     # copy reference iw slc to rslc_dir
     m_rslc_dir = os.path.join(rslc_dir, m_date)
 
@@ -453,7 +402,7 @@ def main():
                 save_files.append(iw_rslc)
                 save_files.append(iw_rslc_par)
                 save_files.append(iw_rslc_tops_par)
-        
+
         # delete files
         for file in os.listdir(s_rslc_dir):
             if file not in save_files:
