@@ -23,7 +23,8 @@ def cmdline_parser():
     parser = argparse.ArgumentParser(description='Write diff_tab for Phase-Stacking using GAMMA.',
         formatter_class=argparse.RawTextHelpFormatter, epilog=EXAMPLE)
 
-    parser.add_argument('diff_dir', help='diff directory including *.unw *.cc and *.diff_par.')
+    parser.add_argument('diff_dir', help='diff directory including *.unw and *.cc.')
+    parser.add_argument('geo_dir', help='geo directory including *.diff_par.')
     parser.add_argument('coh',help='coherence threshold (smaller than this will not be used) for Phase-Stacking.', type=float)
     parser.add_argument('out_tab', help='diff_tab file for Phase-Stacking.')
     parser.add_argument('-u', dest='unw_extension', help='filename extension of unwrapped file (defaults: adf.unw).', default='adf.unw')
@@ -119,25 +120,25 @@ def get_pairs(diff_dir):
     return pairs
 
 
-def get_diff_par(diff_dir, diff_par_extension):
+def get_diff_par(diff_dir, geo_dir, diff_par_extension):
     """Get diff_par file
 
     Args:
-        diff_dir (str): directory contains diff_par
+        diff_dir (str): directory contains unw cc
+        geo_dir (str): directory contains diff_par
         diff_par_extension (str): diff_par file extension
 
     Returns:
-        str: diff_par file path
+        list: diff_par file path
     """
     pairs = get_pairs(diff_dir)
-    diff_par = None
+    diff_pars = []
 
     for pair in pairs:
-        diff_par = os.path.join(diff_dir, pair + diff_par_extension)
-        if os.path.isfile(diff_par):
-            return diff_par
+        diff_par = os.path.join(geo_dir, pair[0:8] + '.diff_par')
+        diff_pars.append(diff_par)
 
-    return diff_par
+    return diff_pars
 
 
 def get_unw_cc(diff_dir, unw_extension, cc_extension):
@@ -166,21 +167,20 @@ def get_unw_cc(diff_dir, unw_extension, cc_extension):
     return unws, ccs
 
 
-def get_mean_coh(ccs, diff_par):
+def get_mean_coh(ccs, diff_pars):
     """Calculate mean coherence
 
     Args:
         ccs (list): cc files
-        diff_par (str): diff_par file
+        diff_pars (list): diff_par file
 
     Returns:
         array: mean coherence array
     """
     mean_coh_array = np.zeros(len(ccs))
 
-    length = int(read_gamma_par(diff_par, 'az_samp_1'))
-
-    for cc in ccs:
+    for cc, diff_par in zip(ccs, diff_pars):
+        length = int(read_gamma_par(diff_par, 'az_samp_1'))
         mean_coh = np.mean(read_gamma(cc, length, 'float32'))
         mean_coh_array[ccs.index(cc)] = mean_coh
 
@@ -246,6 +246,7 @@ def main():
     # get inputs
     inps = cmdline_parser()
     diff_dir = os.path.abspath(inps.diff_dir)
+    geo_dir = os.path.abspath(inps.geo_dir)
     coh_thres = inps.coh
     tab_file = inps.out_tab
     unw_extension = inps.unw_extension
@@ -255,6 +256,10 @@ def main():
     # check diff_dir
     if not os.path.isdir(diff_dir):
         sys.exit('{} does not exist'.format(diff_dir))
+
+    # check diff_dir
+    if not os.path.isdir(geo_dir):
+        sys.exit('{} does not exist'.format(geo_dir))
 
     # check extension
     unw_extension = check_extension(unw_extension)
@@ -268,10 +273,7 @@ def main():
         sys.exit('No pair in {}.'.format(diff_dir))
 
     # get diff_par
-    diff_par = get_diff_par(diff_dir, diff_par_extension)
-
-    if not diff_par:
-        sys.exit('Cannot find diff_par file in {}.'.format(diff_dir))
+    diff_pars = get_diff_par(diff_dir, geo_dir, diff_par_extension)
 
     # get unws and ccs:
     unws, ccs = get_unw_cc(diff_dir, unw_extension, cc_extension)
@@ -284,7 +286,7 @@ def main():
     if os.path.isfile('mean_coh_array.npy'):
         mean_coh_array = np.load('mean_coh_array.npy')
     else:
-        mean_coh_array = get_mean_coh(ccs, diff_par)
+        mean_coh_array = get_mean_coh(ccs, diff_pars)
 
     statistic_coh(mean_coh_array)
 
