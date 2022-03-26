@@ -19,9 +19,9 @@ dinsar_script = """#!/bin/bash
 m_date=m_date_flag
 s_date=s_date_flag
 rslc_dir=rslc_dir_flag
-m_rslc=$rslc_dir/$m_date/$m_date.rslc
+m_rslc=$rslc_dir/$m_date/$m_date.ext_flag
 m_par=$m_rslc.par
-s_rslc=$rslc_dir/$s_date/$s_date.rslc
+s_rslc=$rslc_dir/$s_date/$s_date.ext_flag
 s_par=$s_rslc.par
 
 dem=dem_flag
@@ -91,17 +91,6 @@ quad_sub $pair.adf.unw $diff_par $pair.adf.unw.sub 0 0
 
 rasrmg $pair.adf.unw.sub $m_mli $width_rdc 1 1 0 1 1 .6 1. .35 .0 1 $pair.adf.unw.sub_pwr.bmp $pair.adf.cc 1 .2
 rasrmg $pair.adf.unw.sub -  $width_rdc 1 1 0 1 1 .5 1. .35 .0 1 $pair.adf.unw.sub.bmp $pair.adf.cc 1 .2
-
-# geocode_back $pair.adf.cc $width_rdc $pair.lookup_fine $pair.adf.cc.geo $width_geo $line_geo 1 0
-# geocode_back $pair.adf.diff $width_rdc $pair.lookup_fine $pair.adf.diff.geo $width_geo $line_geo 1 1
-# geocode_back $pair.adf.unw $width_rdc $pair.lookup_fine $pair.adf.unw.geo $width_geo $line_geo 1 0
-# geocode_back $m_mli $width_rdc $pair.lookup_fine $pair.mli.geo $width_geo $line_geo 1 0
-
-# rascc $pair.adf.cc.geo - $width_geo 1 1 0 1 1 .1 .9 1. .35 1 $pair.adf.cc.geo.bmp
-# rascc $pair.adf.cc.geo $pair.mli.geo $width_geo 1 1 0 1 1 .1 .9 1. .35 1 $pair.adf.cc.geo_pwr.bmp
-# rasmph $pair.adf.diff.geo $width_geo 1 0 1 1 1. 0.35 1 $pair.adf.diff.geo.bmp
-# rasmph_pwr $pair.adf.diff.geo $pair.mli.geo $width_geo 1 1 0 1 1 1. 0.35 1 $pair.adf.diff.geo_pwr.bmp
-# rasrmg $pair.adf.unw -  $width_rdc 1 1 0 1 1 .18 1. .35 .0 1 $pair.diff.unw.bmp $pair.adf.cc 1 .2
 """
 
 aps_correction_script="""#!/bin/bash
@@ -452,7 +441,9 @@ def process_gacos(m_gacos, s_gacos, gacos_type, dem_seg_par, wavelength, inciden
 
     diff_ztd = m_ztd - s_ztd
 
-    diff_ztd_interp = pyresample.kd_tree.resample_gauss(ori_grid, diff_ztd, dst_grid, radius_of_influence=500000, sigmas=25000)
+    radius = abs(lat_step) * np.pi / 180.0 * 6378122.65 * 3
+
+    diff_ztd_interp = pyresample.kd_tree.resample_gauss(ori_grid, diff_ztd, dst_grid, radius_of_influence=radius, sigmas=25000)
 
     range2phase = -4 * np.pi / wavelength * np.cos(incidence)
 
@@ -622,25 +613,26 @@ if __name__ == "__main__":
         diff_par = os.path.join(geo_dir, m_date + '.diff_par')
 
         # replace value
-        dinsar_script = dinsar_script.replace('m_date_flag', m_date)
-        dinsar_script = dinsar_script.replace('s_date_flag', s_date)
-        dinsar_script = dinsar_script.replace('rslc_dir_flag', rslc_dir)
-        dinsar_script = dinsar_script.replace('dem_flag', dem)
-        dinsar_script = dinsar_script.replace('dem_par_flag', dem_par)
-        dinsar_script = dinsar_script.replace('m_mli_flag', m_mli)
-        dinsar_script = dinsar_script.replace('s_mli_flag', s_mli)
-        dinsar_script = dinsar_script.replace('dem_rdc_flag', dem_rdc)
-        dinsar_script = dinsar_script.replace('diff_par_flag', diff_par)
-        dinsar_script = dinsar_script.replace('rlks_flag', str(rlks))
-        dinsar_script = dinsar_script.replace('alks_flag', str(alks))
-        dinsar_script = dinsar_script.replace('cc_thres_flag', str(cc_thres))
-        dinsar_script = dinsar_script.replace('roff_flag', str(roff))
-        dinsar_script = dinsar_script.replace('loff_flag', str(loff))
+        dinsar_script_out = dinsar_script.replace('m_date_flag', m_date)
+        dinsar_script_out = dinsar_script_out.replace('s_date_flag', s_date)
+        dinsar_script_out = dinsar_script_out.replace('rslc_dir_flag', rslc_dir)
+        dinsar_script_out = dinsar_script_out.replace('ext_flag', rslc_extension[1:])
+        dinsar_script_out = dinsar_script_out.replace('dem_flag', dem)
+        dinsar_script_out = dinsar_script_out.replace('dem_par_flag', dem_par)
+        dinsar_script_out = dinsar_script_out.replace('m_mli_flag', m_mli)
+        dinsar_script_out = dinsar_script_out.replace('s_mli_flag', s_mli)
+        dinsar_script_out = dinsar_script_out.replace('dem_rdc_flag', dem_rdc)
+        dinsar_script_out = dinsar_script_out.replace('diff_par_flag', diff_par)
+        dinsar_script_out = dinsar_script_out.replace('rlks_flag', str(rlks))
+        dinsar_script_out = dinsar_script_out.replace('alks_flag', str(alks))
+        dinsar_script_out = dinsar_script_out.replace('cc_thres_flag', str(cc_thres))
+        dinsar_script_out = dinsar_script_out.replace('roff_flag', str(roff))
+        dinsar_script_out = dinsar_script_out.replace('loff_flag', str(loff))
 
         # write  script
         run_script = pair + '_DInSAR.sh'
         with open(run_script, 'w+') as f:
-            f.write(dinsar_script)
+            f.write(dinsar_script_out)
 
         # run script
         call_str = 'bash ' + run_script
@@ -673,20 +665,20 @@ if __name__ == "__main__":
             off_par = os.path.join(diff_dir, pair + '.off')
             diff_par = os.path.join(geo_dir, m_date + '.diff_par')
 
-            aps_correction_script = aps_correction_script.replace('pair_flag', pair)
-            aps_correction_script = aps_correction_script.replace('dem_seg_par_flag', dem_seg_par)
-            aps_correction_script = aps_correction_script.replace('lookup_flag', lookup)
-            aps_correction_script = aps_correction_script.replace('m_mli_flag', m_mli)
-            aps_correction_script = aps_correction_script.replace('cc_thres_flag', str(cc_thres))
-            aps_correction_script = aps_correction_script.replace('roff_flag', str(roff))
-            aps_correction_script = aps_correction_script.replace('loff_flag', str(loff))
-            aps_correction_script = aps_correction_script.replace('off_par_flag', off_par)
-            aps_correction_script = aps_correction_script.replace('diff_par_flag', diff_par)
+            aps_correction_script_out = aps_correction_script.replace('pair_flag', pair)
+            aps_correction_script_out = aps_correction_script_out.replace('dem_seg_par_flag', dem_seg_par)
+            aps_correction_script_out = aps_correction_script_out.replace('lookup_flag', lookup)
+            aps_correction_script_out = aps_correction_script_out.replace('m_mli_flag', m_mli)
+            aps_correction_script_out = aps_correction_script_out.replace('cc_thres_flag', str(cc_thres))
+            aps_correction_script_out = aps_correction_script_out.replace('roff_flag', str(roff))
+            aps_correction_script_out = aps_correction_script_out.replace('loff_flag', str(loff))
+            aps_correction_script_out = aps_correction_script_out.replace('off_par_flag', off_par)
+            aps_correction_script_out = aps_correction_script_out.replace('diff_par_flag', diff_par)
 
             # write script
             run_script = pair + '_aps_correction.sh'
             with open(run_script, 'w+') as f:
-                f.write(aps_correction_script)
+                f.write(aps_correction_script_out)
 
             # run script
             call_str = 'bash ' + run_script
