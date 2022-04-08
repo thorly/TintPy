@@ -421,7 +421,7 @@ def main():
     quality_files = glob.glob(rslc_dir + '/*/*.coreg_quality')
     print_coreg_quality(quality_files)
 
-    print('\ndaz10000 is a relative indicator which cannot guarantee the coregistration is ok, you should check the adf.diff.bmp files!')
+    print('\ndaz10000 is a relative indicator which cannot guarantee the coregistration is ok, you should also check the diff files!')
 
     print('\nAll done, enjoy it!\n')
 

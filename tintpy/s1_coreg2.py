@@ -243,6 +243,38 @@ def check_dem_size(slc_par, dem_par):
         sys.exit()
 
 
+def print_coreg_quality(quality_files):
+    """print coregistration quality
+
+    Args:
+        quality_files (str list): quality files
+    """
+    print('-' * 37)
+    print('|{:^35}|'.format('coregistration quality report'))
+    print('-' * 37)
+    print('|{:^16}|{:^10}|       |'.format('date', 'daz10000'))
+    print('-' * 37)
+
+    for file in sorted(quality_files):
+        with open(file, 'r', encoding='utf-8') as f:
+            for i in f.readlines()[::-1]:
+                if i.startswith('azimuth_pixel_offset'):
+                    daz = i.split()[1]
+                    date = os.path.basename(file)[0:8]
+                    daz10000 = float(daz) * 10000
+                    daz10000 = round(daz10000, 2)
+                    if daz10000 > 5:
+                        print('|{:^16}|{:^10}|  >  5 |'.format(date, daz10000))
+                        print('-' * 37)
+                    elif daz10000 < -5:
+                        print('|{:^16}|{:^10}|  < -5 |'.format(date, daz10000))
+                        print('-' * 37)
+                    else:
+                        print('|{:^16}|{:^10}|       |'.format(date, daz10000))
+                        print('-' * 37)
+                    break
+
+
 def main():
     # get inputs
     inps = cmd_line_parser()
@@ -436,19 +468,19 @@ def main():
         run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_total_file} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected1 = f"{pair}.off.corrected1"
-        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_total_file} {off_corrected1}")
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_total_file} {off_corrected1} > {s_date}.coreg_quality")
         run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected1} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected2 = f"{pair}.off.corrected2"
-        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected1} {off_corrected2}")
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected1} {off_corrected2} >> {s_date}.coreg_quality")
         run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected2} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected3 = f"{pair}.off.corrected3"
-        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected2} {off_corrected3}")
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected2} {off_corrected3} >> {s_date}.coreg_quality")
         run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected3} rslc_tab {s_rslc} {s_rslc_par}")
 
         off_corrected4 = f"{pair}.off.corrected4"
-        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected3} {off_corrected4}")
+        run(f"S1_coreg_overlap slc_tab_m rslc_tab {pair} {off_corrected3} {off_corrected4} >> {s_date}.coreg_quality")
         run(f"SLC_interp_lt_S1_TOPS slc_tab_s {s_slc_par} slc_tab_m {m_slc_par} {lt} {m_mli_par} {s_mli_par} {off_corrected4} rslc_tab {s_rslc} {s_rslc_par}")
 
         run(f"phase_sim_orb {m_slc_par} {s_slc_par} {off_corrected4} {rdc_dem} {pair}.sim_unw {m_slc_par} - - 1 1")
@@ -464,6 +496,7 @@ def main():
         save_files.append(s_date + ".rslc.par")
         save_files.append(pair + ".diff.bmp")
         save_files.append(pair + ".diff.pwr.bmp")
+        save_files.append(s_date + '.coreg_quality')
 
         # save iw rslc
         if flag == "t":
@@ -489,7 +522,11 @@ def main():
     for rslc in rslc_files:
         slc2bmp(rslc, rslc + ".par", rlks, alks, rslc + ".bmp")
 
-    print("\nYou can open diff.bmp (diff.pwr.bmp) files to check the coregistration quality!")
+    # check coreg_quality
+    quality_files = glob.glob(rslc_dir + '/*/*.coreg_quality')
+    print_coreg_quality(quality_files)
+
+    print('\ndaz10000 is a relative indicator which cannot guarantee the coregistration is ok, you should also check the diff files!')
 
     print("\nAll done, enjoy it!\n")
 
