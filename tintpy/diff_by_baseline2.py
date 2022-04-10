@@ -456,7 +456,11 @@ if __name__ == "__main__":
         if not os.path.isfile(rslc_path):
             sys.exit('Error file extension for RSLC.')
 
-    # check gacos_dir
+    # check gacos_dir and wavelength
+    if gacos_dir and wavelength is None:
+        sys.exit('wavelength(-w) is required for aps correction.')
+    if gacos_dir is None and wavelength:
+        sys.exit('gacos_dir(-g) is required for aps correction.')
     if gacos_dir and wavelength:
         gacos_dir = os.path.abspath(gacos_dir)
         if not os.path.isdir(gacos_dir):
@@ -464,13 +468,22 @@ if __name__ == "__main__":
 
         check_gacos(dates, gacos_dir, '.ztd')
 
-    # multi-look
     mli_dir = os.path.join(out_dir, 'mli')
     if not os.path.isdir(mli_dir):
         os.mkdir(mli_dir)
 
     rslc_tab = os.path.join(mli_dir, 'rslc_tab')
     mk_tab(rslc_dir, rslc_tab, rslc_extension)
+
+    # select pairs
+    base_dir = os.path.join(out_dir, 'base_calc')
+    if not os.path.isdir(base_dir):
+        os.mkdir(base_dir)
+
+    m_rslc_par = os.path.join(rslc_dir, ref_rslc, ref_rslc + rslc_extension + '.par')
+    pairs = select_pairs_sbas(rslc_tab, m_rslc_par, max_sb, max_tb, base_dir)
+
+    # multi-look
     mk_mli_all(rslc_tab, mli_dir, rlks, alks)
 
     # mk_geo
@@ -490,14 +503,6 @@ if __name__ == "__main__":
     for file in lookups:
         new_name = file.replace('_0.map_to_rdc', '.lookup')
         os.rename(file, new_name)
-
-    # select pairs
-    base_dir = os.path.join(out_dir, 'base_calc')
-    if not os.path.isdir(base_dir):
-        os.mkdir(base_dir)
-
-    m_rslc_par = os.path.join(rslc_dir, ref_rslc, ref_rslc + rslc_extension + '.par')
-    pairs = select_pairs_sbas(rslc_tab, m_rslc_par, max_sb, max_tb, base_dir)
 
     # diff and unwrap
     diff_dir = os.path.join(out_dir, 'diff')
