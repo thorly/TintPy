@@ -103,19 +103,21 @@ def main():
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
+    os.chdir(out_dir)
+
     # read gamma paramaters
     width_rdr = read_gamma_par(diff_par, 'range_samp_1')
     width = read_gamma_par(dem_seg_par, 'width')
     nlines = read_gamma_par(dem_seg_par, 'nlines')
 
     # geocoding
-    geo_ph_rate = ph_rate + '.geo'
+    geo_ph_rate = os.path.basename(ph_rate + '.geo')
     geocode(ph_rate, lookup, geo_ph_rate, width_rdr, width, nlines)
 
-    geo_pwr = pwr + '.geo'
+    geo_pwr = os.path.basename(pwr + '.geo')
     geocode(pwr, lookup, geo_pwr, width_rdr, width, nlines)
 
-    geo_cc = cc + '.geo'
+    geo_cc = os.path.basename(cc + '.geo')
     geocode(cc, lookup, geo_cc, width_rdr, width, nlines)
 
     for cycle in cycles:
@@ -125,16 +127,14 @@ def main():
         os.system(call_str)
 
         # create kml XML file with link to image
-        geo_ph_rate_name = os.path.basename(geo_ph_rate)
-        kml_name = f"{geo_ph_rate_name}_{cycle}.kml"
+        kml_name = f"{geo_ph_rate}_{cycle}.kml"
         out_bmp_name = os.path.basename(out_bmp)
 
-        os.chdir(out_dir)
         call_str = f"kml_map {out_bmp_name} {dem_seg_par} {kml_name}"
         os.system(call_str)
 
         # unzip bmp and kml
-        kmz_name = f"{geo_ph_rate_name}_{cycle}.kmz"
+        kmz_name = f"{geo_ph_rate}_{cycle}.kmz"
         with zipfile.ZipFile(kmz_name, 'w') as f:
             f.write(kml_name)
             os.remove(kml_name)
