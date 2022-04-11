@@ -373,7 +373,11 @@ if __name__ == "__main__":
             else:
                 sys.exit(f'Cannot find *.dem and *.dem.par in {dem_dir}.')
 
-    # check gacos_dir
+    # check gacos_dir and wavelength
+    if gacos_dir and wavelength is None:
+        sys.exit('wavelength(-w) is required for aps correction.')
+    if gacos_dir is None and wavelength:
+        sys.exit('gacos_dir(-g) is required for aps correction.')
     if gacos_dir and wavelength:
         gacos_dir = os.path.abspath(gacos_dir)
         if not os.path.isdir(gacos_dir):

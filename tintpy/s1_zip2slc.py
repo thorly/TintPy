@@ -239,6 +239,7 @@ def run_all_steps(zip_file, date_slc_dir, orb_dir, pol, sub_swath, rlks, alks):
     s1_import_slc_from_zip(zip_file, pol, sub_swath, date_slc_dir)
     # orbit correct and slc2bmp
     slcs = glob.glob(os.path.join(date_slc_dir, '*iw*slc'))
+    os.chdir(date_slc_dir)
     for slc in slcs:
         slc_par = slc + '.par'
         # orbit correct
