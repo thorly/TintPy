@@ -82,9 +82,9 @@ def save_vel_ts(ts_mat, vel_mat, out_ts_file, out_vel_file):
 
     # add master_disp to ts
     if master_index == 0:
-        ts = np.hstack((master_index, ts))
+        ts = np.hstack((master_disp, ts))
     elif master_index == len(all_dates) - 1:
-        ts = np.hstack((ts, master_index))
+        ts = np.hstack((ts, master_disp))
     else:
         ts_before = ts[:, 0:master_index].reshape((-1, master_index))
         ts_after = ts[:, master_index:].reshape((ts.shape[0], -1))
