@@ -41,8 +41,8 @@ import numpy as np
 
 
 EXAMPLE = """Example:
-  python3 gamma2stamps.py /ly/mli /ly/diff /ly/geo 20211229 cc /ly/cc
-  python3 gamma2stamps.py /ly/mli /ly/diff /ly/geo 20211229 ad /ly/ad
+  python3 gamma2stamps_ml.py /ly/mli /ly/diff /ly/geo 20211229 cc /ly/cc
+  python3 gamma2stamps_ml.py /ly/mli /ly/diff /ly/geo 20211229 ad /ly/ad
 """
 
 
