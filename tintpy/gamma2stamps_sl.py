@@ -205,17 +205,22 @@ def prep_files_for_ps(in_rslc_dir, in_diff_dir, in_geo_dir, supermaster, output_
     lookup = os.path.join(in_geo_dir, supermaster + '.lookup_fine')
     gen_lon_lat(dem_seg_par, lookup, diff_par, supermaster, geo_dir)
 
+    print('done')
+
     print('prepare dem directory')
 
     # prep dem/*_seg.par
     dem_seg_par_dst = os.path.join(dem_dir, supermaster + '_seg.par')
     shutil.copy(dem_seg_par, dem_seg_par_dst)
 
-    print('prepare diff0 and rslc directory')
+    print('done')
+
+    print('prepare diff0 directory')
     # get ifg_pairs
     ifg_pairs = [i[0:17] for i in os.listdir(in_diff_dir) if re.match(r'\d{8}_\d{8}', i)]
     ifg_pairs = list(set(ifg_pairs))
 
+    dates = []
     for ifg in ifg_pairs:
         ifg_out = ifg.replace('_', '-')
 
@@ -229,16 +234,25 @@ def prep_files_for_ps(in_rslc_dir, in_diff_dir, in_geo_dir, supermaster, output_
         baseline_dst = os.path.join(diff_dir, ifg_out + '.base')
         shutil.copy(baseline, baseline_dst)
 
-        # prep .rslc and .rslc.par
-        m_rslc = glob.glob(os.path.join(in_rslc_dir, ifg[0:8] + '*slc'))[0]
-        m_rslc_dst = os.path.join(rslc_dir, ifg[0:8] + '.rslc')
-        if not os.path.isfile(m_rslc_dst):
-            shutil.copy(m_rslc, m_rslc_dst)
+        dates.append(ifg[0:8])
+        dates.append(ifg[9:17])
 
-        m_rslc_par = m_rslc + '.par'
-        m_rslc_par_dst = m_rslc_dst + '.par'
-        if not os.path.isfile(m_rslc_par_dst):
-            shutil.copy(m_rslc_par, m_rslc_par_dst)
+    print('done')
+
+    print('prepare rslc directory')
+
+    # prep .rslc and .rslc.par
+    dates = sorted(list(set(dates)))
+    for date in dates:
+        rslc = glob.glob(os.path.join(in_rslc_dir, date, date + '*slc'))[0]
+        rslc_dst = os.path.join(rslc_dir, date + '.rslc')
+        shutil.copy(rslc, rslc_dst)
+
+        rslc_par = rslc + '.par'
+        rslc_par_dst = rslc_dst + '.par'
+        shutil.copy(rslc_par, rslc_par_dst)
+    
+    print('done')
 
     print('\nAll done, enjoy it, you can run mt_prep_gamma in terminal!\n')
 
@@ -283,11 +297,15 @@ def prep_files_for_sbas(rslc_dir, diff_dir, in_geo_dir, supermaster, output_dir)
     lookup = os.path.join(in_geo_dir, supermaster + '.lookup_fine')
     gen_lon_lat(dem_seg_par, lookup, diff_par, supermaster, geo_dir)
 
+    print('done')
+
     print('prepare dem directory')
 
     # dem/*_seg.par
     dem_seg_par_dst = os.path.join(dem_dir, supermaster + '_seg.par')
     shutil.copy(dem_seg_par, dem_seg_par_dst)
+
+    print('done')
 
     print('prepare SMALL_BASELINES directory')
     # get ifg_pairs
@@ -312,7 +330,7 @@ def prep_files_for_sbas(rslc_dir, diff_dir, in_geo_dir, supermaster, output_dir)
         shutil.copy(baseline, baseline_dst)
 
         # prep YYYYMMDD.rslc and .rslc.par
-        m_rslc = glob.glob(os.path.join(rslc_dir, ifg[0:8] + '*slc'))[0]
+        m_rslc = glob.glob(os.path.join(rslc_dir, ifg[0:8], ifg[0:8] + '*slc'))[0]
         m_rslc_dst = os.path.join(ifg_out_dir, ifg[0:8] + '.rslc')
         shutil.copy(m_rslc, m_rslc_dst)
 
@@ -320,9 +338,11 @@ def prep_files_for_sbas(rslc_dir, diff_dir, in_geo_dir, supermaster, output_dir)
         m_rslc_par_dst = m_rslc_dst + '.par'
         shutil.copy(m_rslc_par, m_rslc_par_dst)
 
-        s_rslc = glob.glob(os.path.join(rslc_dir, ifg[9:17] + '*slc'))[0]
+        s_rslc = glob.glob(os.path.join(rslc_dir, ifg[9:17], ifg[9:17] + '*slc'))[0]
         s_rslc_dst = os.path.join(ifg_out_dir, ifg[9:17] + '.rslc')
         shutil.copy(s_rslc, s_rslc_dst)
+
+    print('done')
 
     print('\nAll done, enjoy it, you can run mt_prep_gamma in terminal!\n')
 

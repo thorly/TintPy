@@ -6,7 +6,6 @@
 #######################################################################
 
 import argparse
-from email.mime.nonmultipart import MIMENonMultipart
 import glob
 import os
 import re
