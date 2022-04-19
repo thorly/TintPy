@@ -21,7 +21,6 @@ def cmd_line_parser():
     parser.add_argument('mli_dir', help='mli directory')
     parser.add_argument('geo_dir', help='geo directory')
     parser.add_argument('mintpy_dir', help='output directory')
-    parser.add_argument('-m', dest='mli_par_extension', default='rmli.par', help='mli parameter file extension (defaults: rmli.par)')
     parser.add_argument('-u', dest='unw_extension', default='adf.unw', help='unw file extension (defaults: adf.unw)')
     parser.add_argument('-c', dest='cc_extension', default='adf.cc', help='cc file extension (defaults: adf.cc)')
     inps = parser.parse_args()
@@ -92,7 +91,6 @@ def main():
     mli_dir = os.path.abspath(inps.mli_dir)
     geo_dir = os.path.abspath(inps.geo_dir)
     mintpy_dir = os.path.abspath(inps.mintpy_dir)
-    mli_par_extension = inps.mli_par_extension
     unw_extension = inps.unw_extension
     cc_extension = inps.cc_extension
 
@@ -102,7 +100,6 @@ def main():
     is_dir(geo_dir)
     mk_dir(mintpy_dir)
 
-    mli_par_extension = check_extension(mli_par_extension)
     unw_extension = check_extension(unw_extension)
     cc_extension = check_extension(cc_extension)
 
@@ -121,7 +118,7 @@ def main():
 
     # get rlks
     date = pairs[0][0:8]
-    mli_par = os.path.join(mli_dir, date + mli_par_extension)
+    mli_par = glob.glob(os.path.join(mli_dir, date + '*mli'))[0]
     rlks = get_rlks(mli_par)
 
     print('Copying files into {}'.format(geometry_dir))
@@ -162,12 +159,12 @@ def main():
         off_path = os.path.join(diff_dir, off)
         e1 = os.path.isfile(off_path)
 
-        m_amp_par = m_date + mli_par_extension
-        m_amp_par_path = os.path.join(mli_dir, m_amp_par)
+        m_amp_par = m_date + '*mli'
+        m_amp_par_path = glob.glob(os.path.join(mli_dir, m_amp_par))[0]
         e2 = os.path.isfile(m_amp_par_path)
 
-        s_amp_par = s_date + mli_par_extension
-        s_amp_par_path = os.path.join(mli_dir, s_amp_par)
+        s_amp_par = s_date + '*mli'
+        s_amp_par_path = glob.glob(os.path.join(mli_dir, s_amp_par))[0]
         e3 = os.path.isfile(s_amp_par_path)
 
         cor = pair + cc_extension

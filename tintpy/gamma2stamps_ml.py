@@ -48,7 +48,7 @@ EXAMPLE = """Example:
 
 def cmdline_parser():
     parser = argparse.ArgumentParser(
-        description='Prepare necessary files processed by GAMMA for StaMPS SBAS processing.',
+        description='Prepare multi-looked files processed by GAMMA for StaMPS SBAS processing.',
         epilog=EXAMPLE, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('mli_dir', help='directory including multilooked RSLCs')
@@ -122,9 +122,7 @@ def gen_lon_lat(dem_seg_par, lookup, diff_par, supermaster, out_dir):
         supermaster (str): master date
         out_dir (srt): output directory
     """
-    # width of interferogram
     width = read_gamma_par(diff_par, 'range_samp_1')
-    # length of inerferogram
     length = read_gamma_par(diff_par, 'az_samp_1')
 
     # Extract geocoding information to generate the lon and lat matrices
@@ -143,22 +141,26 @@ def gen_lon_lat(dem_seg_par, lookup, diff_par, supermaster, out_dir):
 
     lons, lats = np.meshgrid(lon, lat)
 
-    os.chdir(out_dir)
+    lon_geo = os.path.join(out_dir, 'lon_geo')
+    lat_geo = os.path.join(out_dir, 'lat_geo')
 
-    write_gamma(lons, 'lon_geo', 'float32')
-    write_gamma(lats, 'lat_geo', 'float32')
+    write_gamma(lons, lon_geo, 'float32')
+    write_gamma(lats, lat_geo, 'float32')
 
-    cmd_str = f'geocode {lookup} lon_geo {width_dem} {supermaster}.lon {width} {length} 2 0'
+    lon_file = os.path.join(out_dir, supermaster + '.lon')
+    lat_file = os.path.join(out_dir, supermaster + '.lat')
+
+    cmd_str = f'geocode {lookup} {lon_geo} {width_dem} {lon_file} {width} {length} 2 0'
     os.system(cmd_str)
 
-    cmd_str = f'geocode {lookup} lat_geo {width_dem} {supermaster}.lat {width} {length} 2 0'
+    cmd_str = f'geocode {lookup} {lat_geo} {width_dem} {lat_file} {width} {length} 2 0'
     os.system(cmd_str)
 
-    if os.path.isfile('lon_geo'):
-        os.remove('lon_geo')
+    if os.path.isfile(lon_geo):
+        os.remove(lon_geo)
 
-    if os.path.isfile('lat_geo'):
-        os.remove('lat_geo')
+    if os.path.isfile(lat_geo):
+        os.remove(lat_geo)
 
 
 def prep_files_for_ad(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
@@ -187,7 +189,7 @@ def prep_files_for_ad(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
     print('prepare geo directory')
 
     # prep geo/*dem.rdc
-    dem_rdc = os.path.join(in_geo_dir, supermaster + '.dem')
+    dem_rdc = os.path.join(in_geo_dir, supermaster + '_dem.rdc')
     dem_rdc_dst = os.path.join(geo_dir, supermaster + '.dem.rdc')
     shutil.copy(dem_rdc, dem_rdc_dst)
 
@@ -197,8 +199,8 @@ def prep_files_for_ad(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
     shutil.copy(diff_par, diff_par_dst)
 
     # prep geo/YYYYMMDD.lon (master) geo/YYYYMMDD.lat (master)
-    dem_seg_par = os.path.join(in_geo_dir, 'dem_seg.par')
-    lookup = os.path.join(in_geo_dir, 'lookup_table_fine')
+    dem_seg_par = os.path.join(in_geo_dir, supermaster + '.dem_seg.par')
+    lookup = os.path.join(in_geo_dir, supermaster + '.lookup_fine')
     gen_lon_lat(dem_seg_par, lookup, diff_par, supermaster, geo_dir)
 
     print('prepare dem directory')
@@ -210,7 +212,7 @@ def prep_files_for_ad(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
     print('prepare SMALL_BASELINES directory')
 
     # get content of mli.par and modify it
-    mli_par = os.path.join(mli_dir, supermaster + '.rmli.par')
+    mli_par = glob.glob(os.path.join(mli_dir, supermaster + '*mli.par'))[0]
     with open(mli_par, 'r') as f:
         mli_par_content = f.read()
         mli_par_content = mli_par_content.replace('FLOAT', 'FCOMPLEX')
@@ -240,13 +242,13 @@ def prep_files_for_ad(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
 
         # prep YYYYMMDD.rslc and .rslc.par
         # real_to_cpx
-        mli1 = os.path.join(mli_dir, ifg[0:8] + '.rmli')
+        mli1 = glob.glob(os.path.join(mli_dir, ifg[0:8] + '*mli'))[0]
         mli1_dst = os.path.join(ifg_out_dir, ifg[0:8] + '.rslc')
 
         call_str = f"real_to_cpx {mli1} - {mli1_dst} {width} 0"
         os.system(call_str)
 
-        mli2 = os.path.join(mli_dir, ifg[9:17] + '.rmli')
+        mli2 = glob.glob(os.path.join(mli_dir, ifg[9:17] + '*mli'))[0]
         mli2_dst = os.path.join(ifg_out_dir, ifg[9:17] + '.rslc')
 
         call_str = f"real_to_cpx {mli2} - {mli2_dst} {width} 0"
@@ -289,7 +291,7 @@ def prep_files_for_cc(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
     print('prepare slc directory')
 
     # prep slc/*.mli slc/*.mli.par  (single master)
-    mli = os.path.join(mli_dir, supermaster + '.rmli')
+    mli = glob.glob(os.path.join(mli_dir, supermaster + '*mli'))[0]
     mli_par = mli + '.par'
     mli_dst = os.path.join(slc_dir, supermaster + '.mli')
     mli_par_dst = mli_dst + '.par'
@@ -299,14 +301,14 @@ def prep_files_for_cc(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
     print('prepare geo directory')
 
     # prep geo/*dem.rdc
-    dem_rdc = os.path.join(in_geo_dir, supermaster + '.dem')
+    dem_rdc = os.path.join(in_geo_dir, supermaster + '_dem.rdc')
     dem_rdc_dst = os.path.join(geo_dir, supermaster + '.dem.rdc')
     shutil.copy(dem_rdc, dem_rdc_dst)
 
     # prep geo/YYYYMMDD.lon (master) geo/YYYYMMDD.lat (master)
-    diff_par = glob.glob(os.path.join(diff_dir, '*.diff_par'))[0]
-    dem_par = os.path.join(in_geo_dir, 'dem_seg.par')
-    lookup = os.path.join(in_geo_dir, 'lookup_table')
+    diff_par = os.path.join(in_geo_dir, supermaster + '.diff_par')
+    dem_par = os.path.join(in_geo_dir, supermaster + '.dem_seg.par')
+    lookup = os.path.join(in_geo_dir, supermaster + '.lookup_fine')
     gen_lon_lat(dem_par, lookup, diff_par, supermaster, geo_dir)
 
     print('prepare rslc and SMALL_BASELINES directory')
@@ -337,11 +339,11 @@ def prep_files_for_cc(mli_dir, diff_dir, in_geo_dir, supermaster, output_dir):
         shutil.copy(cc, cc_dst)
 
         # .mli
-        mli1 = os.path.join(mli_dir, ifg[0:8] + '.rmli')
+        mli1 = glob.glob(os.path.join(mli_dir, ifg[0:8] + '*mli'))[0]
         mli1_dst = os.path.join(rslc_dir, ifg[0:8] + '.mli')
         shutil.copy(mli1, mli1_dst)
 
-        mli2 = os.path.join(mli_dir, ifg[9:17] + '.rmli')
+        mli2 = glob.glob(os.path.join(mli_dir, ifg[9:17] + '*mli'))[0]
         mli2_dst = os.path.join(rslc_dir, ifg[9:17] + '.mli')
         shutil.copy(mli2, mli2_dst)
 
