@@ -1,74 +1,34 @@
 1. Data preprocessing (* means optional)
 
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  1  |     Download data from https://search.asf.alaska.edu/     |        |  2  |            Download orbits using fetch_orbit.py           |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
-
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  3  |                Get SLC using s1_zip2slc.py                |        |  4  |         Concatenate adjacent SLC using s1_cat.py*         |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
-
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  5  |        Copy bursts using s1_copy_bursts.py                |        |  6  |  Download and make DEM using download_dem.py make_dem.py  |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
-
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  7  |            Coregistrate SLCs using s1_coreg.py            |        |  8  |                 Make kmz using slc2kml.py*                |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
-
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  9  |              Copy RSLC AOI using slc_copy.py              |        |  10 |      DInSAR-Stack using rslc2ifg.py or rslc2ifg_2d.py     |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
+    1.1 Download data from https://search.asf.alaska.edu/
+    1.2 Download orbits using fetch_orbit.py
+    1.3 Import SLC using s1_zip2slc.py
+    1.4 Concatenate adjacent SLC using s1_cat.py*
+    1.5 Copy bursts using s1_copy_bursts.py or s1_copy_bursts_auto.py
+    1.6 Download and make DEM using download_dem.py make_gamma_dem.py
+    1.7 Coregistrate SLCs using s1_coreg.py or s1_coreg2.py
+    1.8 Make area kmz using slc2kml.py*
+    1.9 Copy RSLC AOI using slc_copy.py
+    1.10 DInSAR-Stack using diff_by_baseline1.py or diff_by_baseline2.py or diff_for_stamps.py
 
 2. Data postprocessing
 
-2.1 SBAS using MintPy
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  1  |     Prepare files for MintPy using gamma2mintpy.py        |        |  2  |            SBAS processing using MintPy.ipynb             |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
+    2.1 SBAS using MintPy
 
--------------------------------------------------------------------
-|     |                                                           |
-|  3  |        Read MintPy results using read_mintpy.ipynb        |
-|     |                                                           |
--------------------------------------------------------------------
+        2.1.1 Prepare files for MintPy using gamma2mintpy.py
+        2.1.2 SBAS processing using MintPy.ipynb
+        2.1.3 Read MintPy results using read_mintpy.ipynb
 
-2.2 SBAS using StaMPS
 
--------------------------------------------------------------------        -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  1  |      Prepare files for StaMPS using gamma2stamps.py       |        |  2  |                     Run SBAS in matlab                    |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
+    2.2 SBAS using StaMPS
 
--------------------------------------------------------------------
-|     |                                                           |
-|  3  |          Read StaMPS results using read_stamps.py         |
-|     |                                                           |
--------------------------------------------------------------------
+        2.2.1 Prepare files for StaMPS using gamma2stamps_ml.py or gamma2stamps_sl.py
+        2.2.2 Run SBAS in matlab
+        2.2.3 Read StaMPS results using read_stamps.py
 
-2.3 Phase-Stacking
 
-------------------------------------------------------------------         -------------------------------------------------------------------
-|     |                                                           |        |     |                                                           |
-|  1  |               Prepare diff_tab for stacking               |        |  2  |          Run stacking using GAMMA command stcking         |
-|     |                                                           |        |     |                                                           |
--------------------------------------------------------------------        -------------------------------------------------------------------
+    2.3 Phase-Stacking
 
--------------------------------------------------------------------
-|     |                                                           |
-|  3  |              Display results using ph2kmz.py              |
-|     |                                                           |
--------------------------------------------------------------------
+        2.3.1 Prepare diff_tab for stacking
+        2.3.2 Run stacking using GAMMA command stcking
+        2.3.3 Display results using ph2kmz.py

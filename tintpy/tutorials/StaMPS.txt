@@ -1,8 +1,8 @@
-How to run SBAS using StaMPS
+## How to run multi-looked SBAS using StaMPS
 
 1. Select points based on coherence
 
-    1.1. prepare required data structure (gamma2stamps.py)
+    1.1. prepare required data structure (gamma2stamps_ml.py)
     1.2. enter SMALL_BASELINES folder
     1.3. run mt_ml_select_gamma in MATLAB
     1.4. run ps_info to check point number (you can rerun step 3 until you are satisfied)
@@ -15,7 +15,7 @@ How to run SBAS using StaMPS
 
 2. Select points based on amplitude dispersion
 
-    2.1. prepare required data structure (gamma2stamps.py)
+    2.1. prepare required data structure (gamma2stamps_ml.py)
     2.2. run mt_prep_gamma in terminal, and open MATLAB
     2.3. run getparm to get all parameters, and you can set these parameters [setparm('density_rand', 20) setparm('weed_standard_dev',2)]
     2.4. run stamps(1,5)
@@ -51,25 +51,29 @@ How to run SBAS using StaMPS
         3.2.9. run stamps(7,8)
         3.2.10. run ps_plot('V-dao', 'a_gacos'), ps_plot('V-dao', 'a_gacos', 'ts')
 
-4. Fix error
+## How to run single-looked PS/SBAS using StaMPS
 
-    4.1. run mt_ml_select_gamma
+1. Prepare required data structure (gamma2stamps_sl.py)
 
-        Error using  >= 
-        Matrix dimensions must agree.
-        Error in mt_ml_select_gamma (line 147)
+## Fix error
 
-        change the code of mt_ml_select_gamma.m
+1. run mt_ml_select_gamma
 
-        coh=coh';
-        if ischar(coh_thresh)
-            coh_thresh=str2double(coh_thresh);
-        end
-        ix(:,:,i1)=coh>=coh_thresh;
+    Error using  >= 
+    Matrix dimensions must agree.
+    Error in mt_ml_select_gamma (line 147)
+
+    change the code of mt_ml_select_gamma.m
+
+    coh=coh';
+    if ischar(coh_thresh)
+        coh_thresh=str2double(coh_thresh);
+    end
+    ix(:,:,i1)=coh>=coh_thresh;
 
 
-    4.2. run stamps(1,1)
+2. run stamps(1,1)
 
-        change the code of sb_load_initial_gamma.m [line141]
+    change the code of sb_load_initial_gamma.m [line141]
 
-        xy=llh2local(lonlat',ll0)'*1000
+    xy=llh2local(lonlat',ll0)'*1000
