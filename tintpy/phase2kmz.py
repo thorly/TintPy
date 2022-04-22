@@ -18,7 +18,7 @@ from pykml.factory import KML_ElementMaker as KML
 
 EXAMPLE = """Example:
   # geo files
-  python3 ph2kmz.py geo ph_rate dem_seg.par mli wrapped_res 6 -d 1200
+  python3 ph2kmz.py geo ph_rate.geo dem_seg.par mli.geo wrapped_res 6 -d 1200
   # rdc files
   python3 ph2kmz.py rdc ph_rate dem_seg.par mli wrapped_res 6 -l lookup_fine -p diff.par -d 1200
 """
