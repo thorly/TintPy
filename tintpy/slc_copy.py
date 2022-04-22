@@ -30,22 +30,18 @@ def cmd_line_parser():
     parser.add_argument(
         'method',
         help=
-        'get ROI method, rdc for using radar coordinates， geo for using geographic coordinates',
+        'get ROI method, rdc for using radar coordinates, geo for using geographic coordinates',
         choices={'rdc', 'geo'})
 
-    parser.add_argument('-r',
-                        dest='roff',
-                        help='offset to starting rangle sample',
-                        type=int)
-    parser.add_argument('-nr',
-                        dest='nr',
-                        help='number of range samples',
-                        type=int)
-    parser.add_argument('-l',
-                        dest='loff',
-                        help='offset to starting line',
-                        type=int)
-    parser.add_argument('-nl', dest='nl', help='number of lines', type=int)
+    parser.add_argument('-i',
+                        dest='rdc_info',
+                        help='AOI info (roff nr loff nl)' +
+                        '\nroff: offset to starting rangle sample' +
+                        '\nnr: number of range samples' +
+                        '\nloff: offset to starting line' +
+                        '\nnl: number of lines',
+                        type=int,
+                        nargs=4)
 
     parser.add_argument('-d',
                         dest='dem_dir',
@@ -70,11 +66,12 @@ def cmd_line_parser():
 
 
 EXAMPLE = """Example:
-   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdc -r 1 -nr 1000 -l 1 -nl 1000
-   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdc -r 1 -nr 1000 -l 1 -nl 1000 -n 1 -e slc
-
-   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 geo -d dem -k area.kml
-   python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 geo -d dem -k area.kml -n 1 -e slc
+  # rdc
+  python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdc -i 1 1000 1 1000
+  python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 rdc -i 1 1000 1 1000 -n 1 -e slc
+  # geo (Note: kml should not be in the sea)
+  python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 geo -d dem -k area.kml
+  python3 slc_copy.py /ly/rslc /ly/rslc_cut 8 2 geo -d dem -k area.kml -n 1 -e slc
 """
 
 
@@ -138,9 +135,11 @@ def kml2polygon_dict(kml_file):
         ploygon = placemark.getElementsByTagName('Polygon')[0]
         outerBoundaryIs = ploygon.getElementsByTagName('outerBoundaryIs')[0]
         LinearRing = outerBoundaryIs.getElementsByTagName('LinearRing')[0]
-        coordinates = LinearRing.getElementsByTagName('coordinates')[0].childNodes[0].data
+        coordinates = LinearRing.getElementsByTagName(
+            'coordinates')[0].childNodes[0].data
         lon_lat = [i.split(',')[0:2] for i in coordinates.strip().split()]
-        polygon_dict[name + '_' + str(j)] = np.asarray(lon_lat, dtype='float32')
+        polygon_dict[name + '_' + str(j)] = np.asarray(lon_lat,
+                                                       dtype='float32')
         j += 1
 
     return polygon_dict
@@ -162,12 +161,11 @@ def read_gamma_par(par_file, keyword):
     return value
 
 
-def geo2sar(lon, lat, dem_seg_par, lookup_table, rlks, alks):
+def geo2sar(lon_lats, dem_seg_par, lookup_table, rlks, alks):
     """Transform lon and lat to SAR coordinates
 
     Args:
-        lon (float): longitude
-        lat (float): latitude
+        lon_lats (list): longitude and latitude (2-D)
         dem_seg_par (str): dem par
         lookup_table (str): lookup file
         rlks (int): range looks
@@ -182,15 +180,22 @@ def geo2sar(lon, lat, dem_seg_par, lookup_table, rlks, alks):
     lat_step = float(read_gamma_par(dem_seg_par, 'post_lat'))
     lon_step = float(read_gamma_par(dem_seg_par, 'post_lon'))
 
-    xx = int((lat - upper_left_lat) / lat_step)
-    yy = int((lon - upper_left_lon) / lon_step)
-
     range_data, azimuth_data = read_lookup_table(lookup_table, length)
+    rngs = []
+    azis = []
 
-    rng = int(range_data[xx, yy] * rlks)
-    azi = int(azimuth_data[xx, yy] * alks)
+    for lon_lat in lon_lats:
+        lon, lat = lon_lat
+        xx = int((lat - upper_left_lat) / lat_step)
+        yy = int((lon - upper_left_lon) / lon_step)
 
-    return rng, azi
+        rng = int(range_data[xx, yy] * rlks)
+        azi = int(azimuth_data[xx, yy] * alks)
+
+        rngs.append(rng)
+        azis.append(azi)
+
+    return rngs, azis
 
 
 def get_copy_info_from_kml(lookup_table, dem_seg_par, kml, rlks, alks):
@@ -204,29 +209,27 @@ def get_copy_info_from_kml(lookup_table, dem_seg_par, kml, rlks, alks):
         alks (int): azimuth looks
 
     Returns:
-        tuple: (roff, nr, loff, nl)
+        2-D list: [[roff, nr, loff, nl]]
     """
     kml_area = kml2polygon_dict(kml)
 
-    roff, nr, loff, nl = None, None, None, None
+    copy_info = []
 
     for _, polygon in kml_area.items():
-        roff1 = []
-        loff1 = []
-        for i in range(len(polygon)):
-            lon, lat = polygon[i][0], polygon[i][1]
-            rng, azi = geo2sar(lon, lat, dem_seg_par, lookup_table, rlks, alks)
-            roff1.append(rng)
-            loff1.append(azi)
+        if len(polygon) != 5:
+            sys.exit("Error, kml must be a four points polygon!")
 
-        roff_min, roff_max = min(roff1), max(roff1)
-        loff_min, loff_max = min(loff1), max(loff1)
-        roff = roff_min
-        nr = roff_max - roff_min
-        loff = loff_min
-        nl = loff_max - loff_min
+        rngs, azis = geo2sar(polygon[0:-1], dem_seg_par, lookup_table, rlks,
+                             alks)
 
-    return roff, nr, loff, nl
+        roff = min(rngs)
+        nr = max(rngs) - min(rngs)
+        loff = min(azis)
+        nl = max(azis) - min(azis)
+
+        copy_info.append([roff, nr, loff, nl])
+
+    return copy_info
 
 
 def gc_map(slc, slc_par, dem, dem_par, rlks, alks, out_dir):
@@ -303,10 +306,7 @@ def main():
     method = inps.method
 
     # for rdc method
-    roff = inps.roff
-    nr = inps.nr
-    loff = inps.loff
-    nl = inps.nl
+    rdc_info = [inps.rdc_info]
 
     # for geo method
     dem_dir = inps.dem_dir
@@ -323,7 +323,8 @@ def main():
         os.mkdir(out_dir)
 
     # get dates
-    dates = sorted([i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
+    dates = sorted(
+        [i for i in os.listdir(slc_dir) if re.findall(r'^\d{8}$', i)])
 
     # check dates
     if len(dates) < 1:
@@ -340,8 +341,8 @@ def main():
         extension = '.' + extension
 
     if method == 'rdc':
-        if not (roff and nr and loff and nl):
-            sys.exit('roff nr loff and nl are required parameters for rdc method')
+        if not rdc_info:
+            sys.exit('rdc_info (-i) are required parameter for rdc method')
 
     if method == 'geo':
         if dem_dir and kml:
@@ -359,7 +360,8 @@ def main():
                         dem_par = dem + '.par'
                         break
                     else:
-                        sys.exit(f'Cannot find *.dem and *.dem.par in {dem_dir}.')
+                        sys.exit(
+                            f'Cannot find *.dem and *.dem.par in {dem_dir}.')
 
             if not os.path.isfile(kml):
                 sys.exit("{} does not exist.".format(kml))
@@ -371,12 +373,15 @@ def main():
             if not os.path.isdir(tmp_dir):
                 os.mkdir(tmp_dir)
 
-            lookup_table, dem_seg_par = gc_map(slc, slc_par, dem, dem_par, rlks, alks, tmp_dir)
-            roff, nr, loff, nl = get_copy_info_from_kml(lookup_table, dem_seg_par, kml, rlks, alks)
+            lookup_table, dem_seg_par = gc_map(slc, slc_par, dem, dem_par,
+                                               rlks, alks, tmp_dir)
+            rdc_info = get_copy_info_from_kml(lookup_table, dem_seg_par, kml,
+                                              rlks, alks)
 
             shutil.rmtree(tmp_dir)
         else:
-            sys.exit('dem_dir and kml file are required parameters for geo method')
+            sys.exit(
+                'dem_dir and kml file are required parameters for geo method')
 
     for date in dates[0:length]:
         slc = os.path.join(slc_dir, date, date + extension)
@@ -390,10 +395,13 @@ def main():
             if not os.path.isdir(out_slc_dir):
                 os.mkdir(out_slc_dir)
 
-            slc_copy(slc, slc_par, roff, nr, loff, nl, out_slc, out_slc_par)
+            for i in rdc_info:
+                roff, nr, loff, nl = i
+                slc_copy(slc, slc_par, roff, nr, loff, nl, out_slc,
+                         out_slc_par)
 
-            bmp = out_slc + '.bmp'
-            slc2bmp(out_slc, out_slc_par, rlks, alks, bmp)
+                bmp = out_slc + '.bmp'
+                slc2bmp(out_slc, out_slc_par, rlks, alks, bmp)
 
     print('\nAll done, enjoy it.\n')
 
