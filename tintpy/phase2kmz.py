@@ -18,9 +18,9 @@ from pykml.factory import KML_ElementMaker as KML
 
 EXAMPLE = """Example:
   # geo files
-  python3 ph2kmz.py geo ph_rate.geo dem_seg.par mli.geo wrapped_res 6 -d 1200
+  python3 ph2kmz.py geo ph_rate.geo dem_seg.par mli.geo wrapped_res 6 -d 2000
   # rdc files
-  python3 ph2kmz.py rdc ph_rate dem_seg.par mli wrapped_res 6 -l lookup_fine -p diff.par -d 1200
+  python3 ph2kmz.py rdc ph_rate dem_seg.par mli wrapped_res 6 -l lookup_fine -p diff.par -d 2000
 """
 
 
@@ -47,8 +47,8 @@ def cmdline_parser():
     parser.add_argument('-d',
                         dest='dpi',
                         type=int,
-                        default=600,
-                        help='image dpi (defaults:600)')
+                        default=1200,
+                        help='image dpi (defaults: 1200)')
 
     inps = parser.parse_args()
 
@@ -71,8 +71,7 @@ def read_gamma_par(par_file, keyword):
     return value
 
 
-def geocode_back(infile, lookup_file, outfile, width_rdr, width_geo,
-                 lines_geo):
+def geocode_back(infile, lookup_file, outfile, width_rdr, width_geo, lines_geo):
     """Geocoding of image data using lookup table values
 
     Args:
@@ -188,14 +187,14 @@ def draw_colorbar(vlim, cmap, label, out_file, figsize=(0.18, 3.6)):
     fig.savefig(out_file, bbox_inches='tight', dpi=300)
 
 
-def make_kmz(data, lon_lat, out_kmz, img_dpi=600, pwr_data=None, cmap='jet', vlim=None, label=None):
+def make_kmz(data, lon_lat, out_kmz, img_dpi=1200, pwr_data=None, cmap='jet', vlim=None, label=None):
     """Make kmz
 
     Args:
         data (array): data for making kmz
         lon_lat (list): longitude and latitude
         out_kmz (str): output kmz name
-        img_dpi (int, optional): image dpi. Defaults to 600.
+        img_dpi (int, optional): image dpi. Defaults to 1200.
         pwr_data (array, optional): intensity data. Defaults to None.
         cmap (str, optional): colorbar name. Defaults to 'jet'.
         vlim (list, optional): value limitation. Defaults to None.
