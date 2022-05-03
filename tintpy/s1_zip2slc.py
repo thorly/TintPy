@@ -15,8 +15,8 @@ import sys
 import zipfile
 
 EXAMPLE = """Example:
-  python3 s1_zip2slc.py /ly/zip_dir /ly/orbits /ly/slc 1 -r 20 -a 5
-  python3 s1_zip2slc.py /ly/zip_dir /ly/orbits /ly/slc 1 2 3 -r 20 -a 5 -p vv
+  python3 s1_zip2slc.py /ly/zips /ly/orbits /ly/slc 1 -r 20 -a 5
+  python3 s1_zip2slc.py /ly/zips /ly/orbits /ly/slc 1 2 3 -r 20 -a 5
 """
 
 
@@ -137,7 +137,8 @@ def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
     calibration_xmls = []
     noise_xmls = []
     all_files = []
-    print("unzip necessary files")
+    date = get_date_from_zip(zip_file)
+    print(f"unzip necessary files for date: {date}")
     with zipfile.ZipFile(zip_file, mode='r') as f:
         files = f.namelist()
         for file in files:
@@ -160,7 +161,6 @@ def s1_import_slc_from_zip(zip_file, pol, sub_swath, out_slc_dir):
         for file in all_files:
             f.extract(file, out_slc_dir)
     # generate slc
-    date = get_date_from_zip(zip_file)
     for p in pol:
         for i in sub_swath:
             iw = 'iw' + str(i)
