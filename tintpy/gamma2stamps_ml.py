@@ -133,8 +133,8 @@ def gen_lon_lat(dem_seg_par, lookup, diff_par, supermaster, out_dir):
     length_dem = int(read_gamma_par(dem_seg_par, 'nlines'))
     width_dem = int(read_gamma_par(dem_seg_par, 'width'))
 
-    lat_min = lat_max + lat_step * length_dem
-    lon_max = lon_min + lon_step * width_dem
+    lat_min = lat_max + lat_step * (length_dem - 1)
+    lon_max = lon_min + lon_step * (width_dem - 1)
 
     lon = np.linspace(lon_min, lon_max, width_dem)
     lat = np.linspace(lat_max, lat_min, length_dem)
